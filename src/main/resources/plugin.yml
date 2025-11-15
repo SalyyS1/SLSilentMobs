@@ -1,0 +1,15 @@
+name: PrivateMobs
+main: sask.dev.PrivateMobs
+version: ${version}
+api-version: 1.17
+dependency: ProtocolLib
+author: SaskDev
+commands:
+  privatemobs:
+    description: Spawn a private mob
+    permission: privatemob.use
+    tab-completer: privatemob
+permission:
+  privatemobs.use:
+    description: Allow use the main commmand of the PrivateMobs plugin
+    default: op
