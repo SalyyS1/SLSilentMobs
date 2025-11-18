@@ -1,0 +1,15 @@
+# PrivateMobs plugin config
+
+settings:
+  # Max amount per command on amount argument
+  max_amount: 50
+
+messages:
+  usage: "&eUsage: &f/privatemob <player> <mob> [amount] [world] [x] [y] [z]"
+  player_offline: "&cPlayer &e{player} &cis offline"
+  amount_invalid: "&cInvalid amount: must be between &e1 &cand &e{max}"
+  world_invalid: "&cInvalid world: &e{world}"
+  coords_invalid: "&cInvalid coordinates. Please enter valid numbers."
+  mob_type_invalid: "&cInvalid mob type: &e{mob}"
+  spawn_success: "&aSpawned &e{amount} &aprivate mob(s) of type &e{mob} &afor player &e{player}"
+
