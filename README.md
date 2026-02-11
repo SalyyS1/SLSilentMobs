@@ -1,287 +1,280 @@
 # SLSilentMobs
 
-**Plugin Private/Silent Mobs & Instanced Loot cho RPG Server Minecraft**
+**Private/Silent Mobs & Instanced Loot for RPG Minecraft Servers**
 
-> Phiên bản: 1.0.0 | Tác giả: SalyVn | API: Spigot 1.17+ | Java: 17
+> Version: 2.1.0 | Author: SalyVn | API: Paper 1.21.4 | Java: 21
 
----
+A packet-level entity visibility plugin inspired by **Wynncraft**. Mobs, item drops, and regions can be made visible only to specific players — enabling per-player quests, private farm zones, instanced loot, and more.
 
-## 📋 Mục Lục
-
-- [Giới Thiệu](#-giới-thiệu)
-- [Yêu Cầu](#-yêu-cầu)
-- [Cài Đặt](#-cài-đặt)
-- [Tính Năng](#-tính-năng)
-- [Commands](#-commands)
-- [Permissions](#-permissions)
-- [Config](#-config)
-- [Use Cases RPG](#-use-cases-rpg)
+**[Documentation (Wiki)](https://salyys1.github.io/SLSilentMobs/)** | **[Releases](https://github.com/SalyyS1/SLSilentMobs/releases)**
 
 ---
 
-## 🎮 Giới Thiệu
+## Table of Contents
 
-**SLSilentMobs** là plugin cho phép server RPG tạo ra trải nghiệm mob cá nhân hóa cho từng người chơi. Lấy cảm hứng từ hệ thống mob của **Wynncraft**, plugin cung cấp 3 tính năng chính:
-
-1. **Silent Mobs (Manual)** — Spawn mob chỉ 1 player thấy
-2. **Global Silent Mode** — Toàn bộ mob trên server tự động trở thành private
-3. **Silent Item Drops** — Item rơi chỉ người giết thấy (instanced loot)
-
----
-
-## 📦 Yêu Cầu
-
-| Plugin | Phiên bản | Bắt buộc? |
-|--------|-----------|-----------|
-| **Spigot/Paper** | 1.17+ | ✅ Bắt buộc |
-| **ProtocolLib** | 5.4.0+ | ✅ Bắt buộc |
-| **MythicMobs** | 5.9+ | ❌ Tùy chọn (hỗ trợ mob custom) |
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Commands](#commands)
+- [Permissions](#permissions)
+- [Configuration](#configuration)
+- [RPG Use Cases](#rpg-use-cases)
+- [Project Structure](#project-structure)
+- [Building](#building)
+- [License](#license)
 
 ---
 
-## 🔧 Cài Đặt
+## Features
 
-1. Tải file `SLSilentMobs-1.0.0.jar` từ thư mục `target/`
-2. Đặt vào thư mục `plugins/` của server
-3. Đảm bảo đã cài **ProtocolLib**
-4. Khởi động lại server
-5. File `config.yml` sẽ tự động tạo trong `plugins/SLSilentMobs/`
+### Silent Mobs (Manual)
 
----
+Spawn mobs that are **only visible to a designated player**. All other players on the server cannot see or interact with the entity.
 
-## ✨ Tính Năng
-
-### 1. 🔒 Silent Mobs (Manual)
-
-Spawn mob mà **chỉ 1 player được chỉ định mới nhìn thấy**. Tất cả player khác trên server hoàn toàn không thấy con mob đó.
-
-- Hỗ trợ cả **Vanilla mob** và **MythicMobs**
-- Mob chỉ tấn công (target) player chủ sở hữu
-- Tự động despawn khi:
-  - Player chủ sở hữu thoát game
-  - Hết thời gian timeout
-  - Plugin bị disable/reload
-- Player mới join server cũng **không thấy** mob (fix bằng ProtocolLib)
-
-### 2. 🌍 Global Silent Mode (Kiểu Wynncraft)
-
-Khi bật chế độ này, **TẤT CẢ mob spawn trên server** tự động trở thành silent:
-
-- Mob spawn tự nhiên/spawner/MythicMobs → chỉ player **gần nhất** (trong radius) nhìn thấy
-- **Whitelist**: Mob boss/đặc biệt trong whitelist **KHÔNG bị silent** → visible cho tất cả player
-- Hỗ trợ whitelist cả Vanilla EntityType và MythicMobs ID
-- Khi player chủ quit → mob tự chuyển cho player gần nhất (reassign)
-
-**Lợi ích:**
-- Player farm mob hiệu quả hơn, không tranh nhau
-- Boss vẫn visible để cả party/guild đánh chung
-- Giảm lag vì mỗi player chỉ render mob của mình
-
-### 3. 💎 Silent Item Drops (Instanced Loot)
-
-Item rơi ra khi mob chết → **chỉ player giết mới nhìn thấy và nhặt được**:
-
-- Player khác hoàn toàn không thấy item trên mặt đất
-- Player khác không thể nhặt item
-- EXP được cộng trực tiếp cho killer
-- Item tự biến mất sau timeout (mặc định 60 giây)
-- Có thể áp dụng cho: chỉ silent mob, hoặc tất cả mob trên server
-
-### 4. ⏰ Auto Timeout & Cleanup
-
-- Mob silent tự despawn sau thời gian chỉ định
-- Task tự động chạy mỗi 5 giây để cleanup mob hết hạn
-- Giới hạn số mob tối đa mỗi player
-
-### 5. 🛡️ Anti-Target
-
-- Mob silent chỉ target player chủ sở hữu
-- Không tấn công player khác (dù player khác đứng cạnh)
-
----
-
-## 🎯 Commands
-
-### Cơ bản
-
-| Command | Mô tả |
-|---------|--------|
-| `/silentmob spawn <player> <mob> [số lượng] [level] [world] [x] [y] [z]` | Spawn mob silent cho player |
-| `/silentmob despawn <player> [mob]` | Xóa mob silent của player |
-| `/silentmob despawnall` | Xóa TẤT CẢ mob silent trên server |
-| `/silentmob list [player]` | Xem danh sách mob silent đang active |
-| `/silentmob reload` | Reload config |
-
-### Global Silent
-
-| Command | Mô tả |
-|---------|--------|
-| `/silentmob global on` | Bật chế độ Global Silent |
-| `/silentmob global off` | Tắt chế độ Global Silent |
-| `/silentmob global status` | Xem trạng thái Global Silent |
-| `/silentmob global whitelist add <mob>` | Thêm mob vào whitelist (không bị silent) |
-| `/silentmob global whitelist remove <mob>` | Xóa mob khỏi whitelist |
-
-### Aliases
-
-Có thể dùng: `/sm` hoặc `/slmob` thay cho `/silentmob`
-
-### Ví dụ
-
-```bash
-# Spawn 1 zombie silent cho Steve
-/silentmob spawn Steve ZOMBIE
-
-# Spawn 5 skeleton level 10 cho Steve tại tọa độ chỉ định
-/silentmob spawn Steve SKELETON 5 10 world 100 65 200
-
-# Spawn MythicMob "DungeonGoblin" cho Steve
-/silentmob spawn Steve DungeonGoblin
-
-# Xóa tất cả zombie silent của Steve
-/silentmob despawn Steve ZOMBIE
-
-# Bật global silent + whitelist boss
-/silentmob global on
-/silentmob global whitelist add WorldBoss_Dragon
-/silentmob global whitelist add ENDER_DRAGON
-```
-
----
-
-## 🔑 Permissions
-
-| Permission | Mô tả | Mặc định |
-|-----------|--------|----------|
-| `silentmob.use` | Sử dụng command `/silentmob` | OP |
-| `silentmob.admin` | Commands admin: `global`, `reload`, `despawnall` | OP |
-
----
-
-## ⚙️ Config
-
-File config tại `plugins/SLSilentMobs/config.yml`:
-
-### Cài đặt chung
-
-```yaml
-settings:
-  max-amount: 50           # Số mob tối đa mỗi lệnh spawn
-  default-timeout: 300     # Thời gian tồn tại (giây), 0 = vô hạn
-  despawn-on-quit: true    # Despawn khi player thoát game
-  mob-target-owner-only: true  # Mob chỉ target chủ sở hữu
-  death-notification: true # Thông báo khi mob chết
-  max-mobs-per-player: 10  # Giới hạn mob/player
-```
+- Supports both **Vanilla** and **MythicMobs** entity types
+- Mobs only target their assigned owner
+- Permission-based visibility — share mobs with players who have a specific permission node
+- Automatic despawn on owner disconnect, timeout expiry, or plugin disable
 
 ### Global Silent Mode
 
-```yaml
-global-silent:
-  enabled: false           # Bật/tắt chế độ global
-  assign-radius: 32        # Bán kính tìm player gần nhất
-  whitelist:               # Mob KHÔNG bị silent (boss)
-    vanilla:
-      - ENDER_DRAGON
-      - WITHER
-      - WARDEN
-      - ELDER_GUARDIAN
-    mythicmobs:             # Thêm ID MythicMob vào đây
-      - WorldBoss_Dragon
-  reassign-on-owner-quit: true   # Chuyển mob cho player khác khi owner quit
-  despawn-if-no-player: true     # Despawn nếu không có player nào
+When enabled, **every mob on the server** automatically becomes private to the nearest player within a configurable radius.
+
+- Natural spawns, spawners, and MythicMobs are all affected
+- **Whitelist** system: bosses and special mobs remain visible to everyone
+- Ownership transfers to the nearest player when the current owner disconnects
+
+### Silent Regions
+
+Define area-based visibility zones using an in-game wand tool.
+
+- Mobs inside a region are only visible to allowed players or permission holders
+- Per-region mob type filters and exemption lists
+- Managed entirely via commands — region data persists in `regions.yml`
+
+### Instanced Loot
+
+Item drops from mob kills are **only visible to and collectible by the killer**.
+
+- Other players cannot see or pick up the items
+- EXP is awarded directly to the killer
+- Configurable timeout before uncollected items despawn
+- Can be scoped to silent mobs only or applied server-wide
+
+### Additional Systems
+
+- **Anti-Target** — Silent mobs ignore all players except their owner
+- **Auto Timeout & Cleanup** — Background task removes expired mobs every 5 seconds
+- **Per-player mob limits** — Configurable cap on active silent mobs per player
+- **PlaceholderAPI** integration
+- **Multi-language messages** — English and Vietnamese supported out of the box
+
+---
+
+## Requirements
+
+| Dependency | Version | Required |
+|------------|---------|----------|
+| Paper / Spigot | 1.21.4+ | Yes |
+| ProtocolLib | 5.4.0+ | Yes |
+| MythicMobs | 5.x | No (enables custom mob support) |
+| PlaceholderAPI | 2.11+ | No (enables placeholders) |
+
+---
+
+## Installation
+
+1. Download `SLSilentMobs-2.1.0.jar` from the [Releases](https://github.com/SalyyS1/SLSilentMobs/releases) page.
+2. Place the JAR into your server's `plugins/` directory.
+3. Ensure **ProtocolLib** is installed.
+4. Restart the server.
+5. Configuration files are generated automatically in `plugins/SLSilentMobs/`.
+
+---
+
+## Commands
+
+Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
+
+### Core
+
+| Command | Description |
+|---------|-------------|
+| `/sm help` | Display the help menu |
+| `/sm spawn <player> <mob> [amount] [level] [world] [x] [y] [z] [-p <perm>]` | Spawn a silent mob for a player |
+| `/sm despawn <player> [mob]` | Remove silent mobs belonging to a player |
+| `/sm despawnall` | Remove all silent mobs server-wide |
+| `/sm list [player]` | List active silent mobs |
+| `/sm reload` | Reload all configuration files |
+
+### Global Silent
+
+| Command | Description |
+|---------|-------------|
+| `/sm global on` | Enable global silent mode |
+| `/sm global off` | Disable global silent mode |
+| `/sm global status` | Show current status and mob count |
+| `/sm global whitelist add <mob>` | Add a mob to the visibility whitelist |
+| `/sm global whitelist remove <mob>` | Remove a mob from the whitelist |
+
+### Regions
+
+| Command | Description |
+|---------|-------------|
+| `/sm wand` | Receive the region selection wand |
+| `/sm region create <name>` | Create a region from the current selection |
+| `/sm region delete <name>` | Delete a region |
+| `/sm region list` | List all defined regions |
+| `/sm region info <name>` | Show details of a region |
+| `/sm region addmob <region> <mob>` | Add a mob type to a region's silent list |
+| `/sm region addplayer <region> <player>` | Allow a player to see mobs in a region |
+| `/sm region addperm <region> <perm>` | Allow a permission node to see mobs in a region |
+
+### Examples
+
+```bash
+# Spawn a silent zombie for Steve
+/sm spawn Steve ZOMBIE
+
+# Spawn 5 level-10 skeletons at specific coordinates
+/sm spawn Steve SKELETON 5 10 world 100 65 200
+
+# Spawn a MythicMob visible only to players with vip.premium
+/sm spawn Steve DungeonGoblin 1 1 -p vip.premium
+
+# Enable global silent mode with boss whitelist
+/sm global on
+/sm global whitelist add ENDER_DRAGON
+/sm global whitelist add WorldBoss_Dragon
 ```
 
-### Silent Item Drops
+---
+
+## Permissions
+
+| Permission | Description | Default |
+|------------|-------------|---------|
+| `silentmob.use` | Use the `/silentmob` command | OP |
+| `silentmob.admin` | Admin commands: `global`, `reload`, `despawnall`, `region`, `wand` | OP |
+
+---
+
+## Configuration
+
+Version 2.1.0 splits configuration into four files:
+
+```
+plugins/SLSilentMobs/
+  config.yml     — General settings and global silent mode
+  drops.yml      — Instanced loot settings
+  regions.yml    — Region data (managed by commands)
+  messages.yml   — All messages with language toggle (en / vi)
+```
+
+Refer to the **[Wiki](https://salyys1.github.io/SLSilentMobs/)** for detailed configuration documentation.
+
+### Quick Reference
 
 ```yaml
+# config.yml
+settings:
+  max-amount: 50
+  default-timeout: 300        # seconds, 0 = infinite
+  despawn-on-quit: true
+  mob-target-owner-only: true
+  death-notification: true
+  max-mobs-per-player: 10
+
+global-silent:
+  enabled: false
+  assign-radius: 32
+  whitelist:
+    vanilla: [ENDER_DRAGON, WITHER, WARDEN]
+    mythicmobs: []
+  reassign-on-owner-quit: true
+  despawn-if-no-player: true
+```
+
+```yaml
+# drops.yml
 silent-drops:
   enabled: true
-  apply-to-silent-mobs-only: true  # Chỉ áp dụng cho silent mob
-  apply-globally: false             # true = TẤT CẢ mob đều silent drop
-  drop-timeout: 60                  # Giây trước khi item biến mất
+  apply-to-silent-mobs-only: true
+  apply-globally: false
+  drop-timeout: 60
 ```
 
-### Tin nhắn (Messages)
-
-Tất cả tin nhắn đều tùy chỉnh được trong config. Hỗ trợ mã màu `&` (VD: `&a` = xanh lá, `&c` = đỏ, `&e` = vàng).
-
----
-
-## 🗡️ Use Cases RPG
-
-### 1. Quest Mob cá nhân
-```bash
-# NPC giao quest → spawn mob riêng cho player
-/silentmob spawn Steve QuestBoss_Goblin 1 5
-```
-Player khác không thấy mob quest, không can thiệp được.
-
-### 2. Farm Zone
-```bash
-# Bật global silent → mỗi player farm mob riêng
-/silentmob global on
-```
-Không tranh mob, không KS (Kill Steal). Mỗi player tự thấy và farm mob của mình.
-
-### 3. Dungeon Boss (Whitelist)
-```bash
-# Boss dungeon visible cho cả party
-/silentmob global whitelist add DungeonBoss_Dragon
-```
-Boss nằm trong whitelist → tất cả player thấy → cả nhóm cùng đánh.
-
-### 4. Instanced Loot
-Khi bật `silent-drops`, item rơi chỉ killer thấy → không tranh nhau nhặt đồ.
-
-### 5. PvE Event
-```bash
-# Spawn nhiều mob cho 1 player trong event
-/silentmob spawn Steve EventZombie 10 1 world 100 65 200
+```yaml
+# messages.yml
+language: vi   # Switch to "en" for English
 ```
 
 ---
 
-## 📁 Cấu Trúc Source Code
+## RPG Use Cases
+
+**Personal Quest Mobs** — NPCs trigger `/sm spawn` to create private quest encounters per player. No interference from others.
+
+**Private Farm Zones** — Enable global silent mode so every player farms their own mob instances. No kill-stealing.
+
+**Dungeon Bosses** — Whitelist boss mobs so the entire party can see and fight them together.
+
+**Instanced Loot** — Each player sees only their own drops. No loot competition.
+
+**PvE Events** — Spawn waves of mobs visible only to the event participant.
+
+---
+
+## Project Structure
 
 ```
 src/main/java/vn/saly/silentmobs/
-├── SLSilentMobs.java              # Main plugin class
-├── command/
-│   ├── SilentMobCommand.java      # Command handler
-│   └── SilentMobTab.java          # Tab completer
-├── global/
-│   ├── GlobalSilentManager.java   # Auto-silent all mobs
-│   └── GlobalSilentConfig.java    # Whitelist config
-├── listener/
-│   ├── SilentMobDeathListener.java
-│   ├── SilentMobTargetListener.java
-│   └── PlayerConnectionListener.java
-├── loot/
-│   ├── SilentDropManager.java     # Instanced loot
-│   └── SilentDropListener.java
-├── manager/
-│   └── SilentMobManager.java      # Central mob manager
-├── model/
-│   └── SilentMob.java             # Mob data model
-├── task/
-│   └── MobTimeoutTask.java        # Auto-cleanup
-└── visibility/
-    └── EntityHider.java           # ProtocolLib packet hiding
+  SLSilentMobs.java                 Main plugin class
+  config/
+    ConfigManager.java              Multi-file config handler
+  command/
+    SilentMobCommand.java           Command handler
+    SilentMobTab.java               Tab completer
+  global/
+    GlobalSilentManager.java        Auto-silent all mobs
+    GlobalSilentConfig.java         Whitelist configuration
+  listener/
+    SilentMobDeathListener.java     Death cleanup & notification
+    SilentMobTargetListener.java    Owner-only targeting
+    PlayerConnectionListener.java   Join/quit handling
+  loot/
+    SilentDropManager.java          Instanced loot engine
+    SilentDropListener.java         Drop interception
+  manager/
+    SilentMobManager.java           Central mob registry
+  model/
+    SilentMob.java                  Mob data model
+  region/
+    RegionManager.java              Region CRUD & persistence
+    SilentRegion.java               Region data model
+    RegionSilentListener.java       Region-based visibility
+    WandManager.java                Selection wand tool
+    WandListener.java               Wand interaction handler
+  task/
+    MobTimeoutTask.java             Scheduled cleanup
+  visibility/
+    EntityHider.java                ProtocolLib packet hiding
+  placeholder/
+    SilentMobsPlaceholder.java      PlaceholderAPI hook
 ```
 
 ---
 
-## 🔧 Build
+## Building
 
 ```bash
 mvn clean package
 ```
 
-File JAR sẽ nằm tại `target/SLSilentMobs-1.0.0.jar`
+The compiled JAR is output to `target/SLSilentMobs-2.1.0.jar`.
 
 ---
 
-## 📄 License
+## License
 
-Plugin được phát triển bởi **SalyVn** cho server RPG.
+Developed by **SalyVn** for RPG server use.
