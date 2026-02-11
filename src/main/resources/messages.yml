@@ -1,0 +1,136 @@
+# ============================================
+# SLSilentMobs v2.1.0 - Messages & Localization
+# Language: "vi" (Tiếng Việt) or "en" (English)
+# ============================================
+
+language: vi
+
+# ============================================
+# ENGLISH MESSAGES
+# ============================================
+en:
+  prefix: "&8[&bSilentMobs&8] "
+
+  # Help command
+  help-header: "&b&l━━━━━━━ &f&lSLSilentMobs Help &b&l━━━━━━━"
+  help-version: "&7Version: &b{version} &7| Author: &bSalyVn"
+  help-line: "&8&m                                          "
+  help-spawn: "&e/sm spawn <player> <mob> &7[amount] [level] [-p <perm>]"
+  help-spawn-desc: "&8  ➥ &fSpawn silent mob(s) for a player"
+  help-despawn: "&e/sm despawn <player> &7[mob]"
+  help-despawn-desc: "&8  ➥ &fDespawn silent mobs for a player"
+  help-despawnall: "&e/sm despawnall"
+  help-despawnall-desc: "&8  ➥ &fDespawn ALL silent mobs on server"
+  help-list: "&e/sm list &7[player]"
+  help-list-desc: "&8  ➥ &fList active silent mobs"
+  help-global: "&e/sm global <on|off|status|whitelist>"
+  help-global-desc: "&8  ➥ &fManage global silent mode"
+  help-reload: "&e/sm reload"
+  help-reload-desc: "&8  ➥ &fReload all config files"
+  help-wand: "&e/sm wand"
+  help-wand-desc: "&8  ➥ &fGet region selection wand"
+  help-region: "&e/sm region <create|delete|list|info|...>"
+  help-region-desc: "&8  ➥ &fManage silent regions"
+  help-footer: "&b&l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  help-tip: "&7Tip: Use &b/sm &7or &b/silentmob &7as alias."
+
+  # General messages
+  usage: "&eUsage: &f/sm <spawn|despawn|despawnall|list|global|reload|wand|region|help>"
+  spawn-success: "&aSpawned &e{amount} &asilent mob(s) &e{mob} &afor &e{player}"
+  spawn-fail: "&cFailed to spawn mob: &e{mob}"
+  despawn-success: "&aDespawned silent mobs for &e{player}"
+  despawn-all-success: "&aDespawned all silent mobs on server"
+  player-offline: "&cPlayer &e{player} &cis offline"
+  amount-invalid: "&cInvalid amount: must be between &e1 &cand &e{max}"
+  mob-type-invalid: "&cInvalid mob type: &e{mob}"
+  world-invalid: "&cInvalid world: &e{world}"
+  coords-invalid: "&cInvalid coordinates"
+  max-mobs-reached: "&cPlayer &e{player} &chas reached max silent mobs (&e{max}&c)"
+  mob-death: "&7Your silent mob &e{mob} &7has died"
+  list-header: "&bSilent mobs for &e{player}&b:"
+  list-entry: "&7- &e{mob} &7at &f{world} {x} {y} {z} &7(age: &e{age}s&7)"
+  list-empty: "&7No active silent mobs"
+  global-enabled: "&aGlobal Silent mode &2ENABLED"
+  global-disabled: "&cGlobal Silent mode &4DISABLED"
+  global-status: "&bGlobal Silent: {status}&b | Active mobs: &e{count}"
+  whitelist-added: "&aAdded &e{mob} &ato whitelist"
+  whitelist-removed: "&cRemoved &e{mob} &cfrom whitelist"
+  whitelist-already: "&e{mob} &7is already in whitelist"
+  whitelist-not-found: "&e{mob} &7is not in whitelist"
+  reload-success: "&aAll configs reloaded successfully!"
+  no-permission: "&cYou don't have permission to do this"
+
+  # Wand & Region
+  wand-received: "&aYou received the &bSilentMobs Wand&a!"
+  wand-usage: "&7Left Click → Set Pos1 | Right Click → Set Pos2"
+  region-created: "&aRegion &b{name} &acreated!"
+  region-deleted: "&aRegion &b{name} &adeleted"
+  region-exists: "&cRegion &e{name} &calready exists!"
+  region-not-found: "&cRegion &e{name} &cnot found"
+  region-no-wand: "&cYou must select pos1 and pos2 with the wand first!"
+  region-only-player: "&cOnly players can use this command"
+
+# ============================================
+# VIETNAMESE MESSAGES (Tiếng Việt)
+# ============================================
+vi:
+  prefix: "&8[&bSilentMobs&8] "
+
+  # Lệnh help
+  help-header: "&b&l━━━━━━━ &f&lSLSilentMobs Trợ Giúp &b&l━━━━━━━"
+  help-version: "&7Phiên bản: &b{version} &7| Tác giả: &bSalyVn"
+  help-line: "&8&m                                          "
+  help-spawn: "&e/sm spawn <người_chơi> <mob> &7[số_lượng] [level] [-p <quyền>]"
+  help-spawn-desc: "&8  ➥ &fTriệu hồi mob ẩn cho người chơi"
+  help-despawn: "&e/sm despawn <người_chơi> &7[mob]"
+  help-despawn-desc: "&8  ➥ &fXóa mob ẩn của người chơi"
+  help-despawnall: "&e/sm despawnall"
+  help-despawnall-desc: "&8  ➥ &fXóa TẤT CẢ mob ẩn trên server"
+  help-list: "&e/sm list &7[người_chơi]"
+  help-list-desc: "&8  ➥ &fXem danh sách mob ẩn đang hoạt động"
+  help-global: "&e/sm global <on|off|status|whitelist>"
+  help-global-desc: "&8  ➥ &fQuản lý chế độ ẩn toàn cục"
+  help-reload: "&e/sm reload"
+  help-reload-desc: "&8  ➥ &fTải lại tất cả file cấu hình"
+  help-wand: "&e/sm wand"
+  help-wand-desc: "&8  ➥ &fNhận gậy chọn vùng"
+  help-region: "&e/sm region <create|delete|list|info|...>"
+  help-region-desc: "&8  ➥ &fQuản lý vùng ẩn mob"
+  help-footer: "&b&l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  help-tip: "&7Mẹo: Dùng &b/sm &7hoặc &b/silentmob &7làm alias."
+
+  # Tin nhắn chung
+  usage: "&eCách dùng: &f/sm <spawn|despawn|despawnall|list|global|reload|wand|region|help>"
+  spawn-success: "&aĐã triệu hồi &e{amount} &amob ẩn &e{mob} &acho &e{player}"
+  spawn-fail: "&cKhông thể triệu hồi mob: &e{mob}"
+  despawn-success: "&aĐã xóa mob ẩn của &e{player}"
+  despawn-all-success: "&aĐã xóa tất cả mob ẩn trên server"
+  player-offline: "&cNgười chơi &e{player} &ckhông online"
+  amount-invalid: "&cSố lượng không hợp lệ: phải từ &e1 &cđến &e{max}"
+  mob-type-invalid: "&cLoại mob không hợp lệ: &e{mob}"
+  world-invalid: "&cThế giới không hợp lệ: &e{world}"
+  coords-invalid: "&cTọa độ không hợp lệ"
+  max-mobs-reached: "&cNgười chơi &e{player} &cđã đạt giới hạn mob ẩn (&e{max}&c)"
+  mob-death: "&7Mob ẩn &e{mob} &7của bạn đã chết"
+  list-header: "&bMob ẩn của &e{player}&b:"
+  list-entry: "&7- &e{mob} &7tại &f{world} {x} {y} {z} &7(tuổi: &e{age}s&7)"
+  list-empty: "&7Không có mob ẩn nào đang hoạt động"
+  global-enabled: "&aChế độ Ẩn Toàn Cục &2BẬT"
+  global-disabled: "&cChế độ Ẩn Toàn Cục &4TẮT"
+  global-status: "&bẨn Toàn Cục: {status}&b | Mob đang hoạt động: &e{count}"
+  whitelist-added: "&aĐã thêm &e{mob} &avào whitelist"
+  whitelist-removed: "&cĐã xóa &e{mob} &ckhỏi whitelist"
+  whitelist-already: "&e{mob} &7đã có trong whitelist rồi"
+  whitelist-not-found: "&e{mob} &7không có trong whitelist"
+  reload-success: "&aTải lại tất cả cấu hình thành công!"
+  no-permission: "&cBạn không có quyền thực hiện lệnh này"
+
+  # Gậy & Vùng
+  wand-received: "&aBạn đã nhận &bGậy SilentMobs&a!"
+  wand-usage: "&7Click Trái → Chọn Điểm 1 | Click Phải → Chọn Điểm 2"
+  region-created: "&aĐã tạo vùng &b{name}&a!"
+  region-deleted: "&aĐã xóa vùng &b{name}"
+  region-exists: "&cVùng &e{name} &cđã tồn tại!"
+  region-not-found: "&cKhông tìm thấy vùng &e{name}"
+  region-no-wand: "&cBạn phải chọn điểm 1 và điểm 2 bằng gậy trước!"
+  region-only-player: "&cChỉ người chơi mới dùng được lệnh này"

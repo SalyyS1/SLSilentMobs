@@ -1,0 +1,13 @@
+# ============================================
+# SLSilentMobs - Silent Item Drops Config
+# Per-player instanced loot like Wynncraft
+# ============================================
+
+silent-drops:
+  enabled: true
+  # Only apply to silent mobs (manual + global)
+  apply-to-silent-mobs-only: true
+  # Apply to ALL mob deaths on server
+  apply-globally: false
+  # Seconds before unclaimed item disappears
+  drop-timeout: 60

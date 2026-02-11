@@ -1,0 +1,15 @@
+# ============================================
+# SLSilentMobs - Silent Regions Config
+# Regions are created in-game with /sm commands.
+# Do NOT manually edit unless you know what you're doing.
+# ============================================
+# Example:
+#   vip_farm:
+#     world: world
+#     pos1: {x: 100, y: 60, z: 200}
+#     pos2: {x: 200, y: 120, z: 300}
+#     silent-mobs: [ZOMBIE, SKELETON]
+#     exempt-mobs: [ENDER_DRAGON]
+#     allowed-players: []
+#     allowed-permissions:
+#       - silentmob.region.vip_farm

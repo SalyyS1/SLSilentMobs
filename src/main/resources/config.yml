@@ -1,15 +1,47 @@
-# PrivateMobs plugin config
+# ============================================
+# SLSilentMobs v2.1.0 by SalyVn
+# Private/Silent Mobs & Instanced Loot for RPG
+# ============================================
+# Config files:
+#   config.yml   - General settings & Global Silent
+#   drops.yml    - Silent item drops settings
+#   regions.yml  - Region data (auto-managed)
+#   messages.yml - Messages & language (vi/en)
+# ============================================
 
 settings:
-  # Max amount per command on amount argument
-  max_amount: 50
+  # Max mobs per spawn command
+  max-amount: 50
+  # Default timeout in seconds (0 = infinite)
+  default-timeout: 300
+  # Despawn all silent mobs when viewer disconnects
+  despawn-on-quit: true
+  # Silent mob only targets its owner/viewer
+  mob-target-owner-only: true
+  # Notify viewer when their silent mob dies
+  death-notification: true
+  # Max silent mobs per player at the same time
+  max-mobs-per-player: 10
 
-messages:
-  usage: "&eUsage: &f/privatemob <player> <mob> [amount] [world] [x] [y] [z]"
-  player_offline: "&cPlayer &e{player} &cis offline"
-  amount_invalid: "&cInvalid amount: must be between &e1 &cand &e{max}"
-  world_invalid: "&cInvalid world: &e{world}"
-  coords_invalid: "&cInvalid coordinates. Please enter valid numbers."
-  mob_type_invalid: "&cInvalid mob type: &e{mob}"
-  spawn_success: "&aSpawned &e{amount} &aprivate mob(s) of type &e{mob} &afor player &e{player}"
-
+# ============================================
+# GLOBAL SILENT MODE (Wynncraft-style)
+# When enabled, ALL mobs spawned on the server
+# become silent/private automatically.
+# Whitelisted mobs (bosses) remain visible to all.
+# ============================================
+global-silent:
+  enabled: false
+  # Radius to find nearest player to assign mob to
+  assign-radius: 32
+  # Mobs NOT affected by global silent (visible to all)
+  whitelist:
+    vanilla:
+      - ENDER_DRAGON
+      - WITHER
+      - WARDEN
+      - ELDER_GUARDIAN
+    mythicmobs: []
+  # When owner quits, reassign mob to nearest player
+  reassign-on-owner-quit: true
+  # Despawn mob if no player is nearby
+  despawn-if-no-player: true

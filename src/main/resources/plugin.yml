@@ -1,15 +1,29 @@
-name: PrivateMobs
-main: sask.dev.PrivateMobs
+name: SLSilentMobs
+main: vn.saly.silentmobs.SLSilentMobs
 version: ${version}
 api-version: 1.17
-dependency: ProtocolLib
-author: SaskDev
+author: SalyVn
+description: Private/Silent Mobs, Instanced Loot & Region System for RPG servers
+depend:
+  - ProtocolLib
+softdepend:
+  - MythicMobs
+  - PlaceholderAPI
 commands:
-  privatemobs:
-    description: Spawn a private mob
-    permission: privatemob.use
-    tab-completer: privatemob
-permission:
-  privatemobs.use:
-    description: Allow use the main commmand of the PrivateMobs plugin
+  silentmob:
+    description: Manage silent mobs, regions, and visibility
+    permission: silentmob.use
+    aliases: [sm, slmob]
+permissions:
+  silentmob.use:
+    description: Use the main command of SLSilentMobs
+    default: op
+  silentmob.admin:
+    description: Admin commands (global, reload, wand, region)
+    default: op
+  silentmob.wand:
+    description: Use the region selection wand
+    default: op
+  silentmob.region.*:
+    description: Wildcard for all region permissions
     default: op

@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLSilentMobs — Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0c0e14;
+            --bg-card: #13161f;
+            --bg-sidebar: #10121a;
+            --border: #1e2230;
+            --border-hover: #2a3045;
+            --text: #c8cdd8;
+            --text-muted: #6b7280;
+            --text-heading: #e4e8f0;
+            --accent: #06b6d4;
+            --accent-dim: rgba(6, 182, 212, 0.12);
+            --green: #22c55e;
+            --green-dim: rgba(34, 197, 94, 0.12);
+            --amber: #f59e0b;
+            --amber-dim: rgba(245, 158, 11, 0.12);
+            --red: #ef4444;
+            --cyan: #06b6d4;
+            --code-bg: #0a0c12;
+            --code-border: #1a1d28;
+            --radius: 8px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 24px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---- LAYOUT ---- */
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            padding: 28px 0;
+            overflow-y: auto;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main {
+            margin-left: 260px;
+            flex: 1;
+            max-width: 860px;
+            padding: 40px 48px 80px;
+        }
+
+        /* ---- SIDEBAR ---- */
+        .sidebar-brand {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+
+        .sidebar-brand h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-heading);
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-brand h1::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand .ver {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 4px;
+            margin-left: 16px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .nav-section {
+            padding: 0 10px;
+            margin-bottom: 2px;
+        }
+
+        .nav-section-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 16px 12px 6px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-section-title::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 1px;
+            background: var(--border-hover);
+            flex-shrink: 0;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.18s ease;
+            border-left: 2px solid transparent;
+            margin-left: 2px;
+        }
+
+        .nav-link:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.03);
+            border-left-color: var(--border-hover);
+        }
+
+        .nav-link.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+            border-left-color: var(--accent);
+        }
+
+        /* ---- LANG TOGGLE ---- */
+        .lang-toggle {
+            margin: auto 20px 0;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 6px;
+        }
+
+        .lang-btn {
+            flex: 1;
+            padding: 7px 0;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .lang-btn.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.15);
+        }
+
+        /* ---- CONTENT ---- */
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin: 48px 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            letter-spacing: -0.3px;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin: 28px 0 10px;
+        }
+
+        p {
+            margin-bottom: 12px;
+        }
+
+        ul,
+        ol {
+            margin: 8px 0 16px 20px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        strong {
+            color: var(--text-heading);
+            font-weight: 600;
+        }
+
+        /* ---- BADGES ---- */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
+            vertical-align: middle;
+        }
+
+        .badge-required {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .badge-optional {
+            background: var(--amber-dim);
+            color: var(--amber);
+        }
+
+        .badge-new {
+            background: rgba(6, 182, 212, 0.15);
+            color: #06b6d4;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* ---- TABLES ---- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--bg-card);
+            color: var(--text-heading);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        /* ---- CODE ---- */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--cyan);
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin: 10px 0 20px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text);
+        }
+
+        .hl-comment {
+            color: #6b7280;
+        }
+
+        .hl-key {
+            color: #6366f1;
+        }
+
+        .hl-val {
+            color: #22c55e;
+        }
+
+        .hl-str {
+            color: #f59e0b;
+        }
+
+        .hl-cmd {
+            color: #06b6d4;
+        }
+
+        /* ---- FEATURE CARDS ---- */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 16px 0 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            transition: border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .feature-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin-bottom: 6px;
+        }
+
+        .feature-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* ---- CALLOUT ---- */
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            padding: 14px 18px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+
+        .callout-green {
+            border-left-color: var(--green);
+        }
+
+        .callout-amber {
+            border-left-color: var(--amber);
+        }
+
+        /* ---- STRUCTURE TREE ---- */
+        .tree {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin: 12px 0 20px;
+        }
+
+        .tree-root-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--code-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tree-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .tree-list .tree-list {
+            margin-left: 20px;
+            padding-left: 12px;
+            border-left: 1px solid var(--border);
+        }
+
+        .tree-item {
+            margin: 0;
+        }
+
+        .tree-item-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.15s ease;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .tree-item-row:hover {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .tree-icon {
+            font-size: 14px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .tree-name {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .tree-name.is-dir {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .tree-desc {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-style: italic;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .tree-badge {
+            background: rgba(6, 182, 212, 0.15);
+            color: #06b6d4;
+            font-size: 10px;
+            font-weight: 700;
+            font-style: normal;
+            padding: 1px 7px;
+            border-radius: 4px;
+            margin-left: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 24px 20px 60px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---- LANG ---- */
+        [data-lang="vi"] {
+            display: none;
+        }
+
+        body.lang-vi [data-lang="en"] {
+            display: none;
+        }
+
+        body.lang-vi [data-lang="vi"] {
+            display: revert;
+        }
+
+        body.lang-vi a.nav-link[data-lang="vi"] {
+            display: block;
+        }
+
+        body.lang-vi .nav-section-title[data-lang="vi"] {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR -->
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h1>SLSilentMobs</h1>
+                <div class="ver">v2.0.0 &mdash; by SalyVn</div>
+            </div>
+
+            <nav class="nav-section">
+                <div class="nav-section-title" data-lang="en">Getting Started</div>
+                <div class="nav-section-title" data-lang="vi">Bắt đầu</div>
+                <a class="nav-link active" href="#overview" data-lang="en">Overview</a>
+                <a class="nav-link active" href="#overview" data-lang="vi">Tổng quan</a>
+                <a class="nav-link" href="#requirements" data-lang="en">Requirements</a>
+                <a class="nav-link" href="#requirements" data-lang="vi">Yêu cầu</a>
+                <a class="nav-link" href="#installation" data-lang="en">Installation</a>
+                <a class="nav-link" href="#installation" data-lang="vi">Cài đặt</a>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-section-title" data-lang="en">Features</div>
+                <div class="nav-section-title" data-lang="vi">Tính năng</div>
+                <a class="nav-link" href="#silent-mobs" data-lang="en">Silent Mobs</a>
+                <a class="nav-link" href="#silent-mobs" data-lang="vi">Silent Mobs</a>
+                <a class="nav-link" href="#global-mode" data-lang="en">Global Mode</a>
+                <a class="nav-link" href="#global-mode" data-lang="vi">Global Mode</a>
+                <a class="nav-link" href="#instanced-loot" data-lang="en">Instanced Loot</a>
+                <a class="nav-link" href="#instanced-loot" data-lang="vi">Loot cá nhân</a>
+                <a class="nav-link" href="#anti-target" data-lang="en">Anti-Target</a>
+                <a class="nav-link" href="#anti-target" data-lang="vi">Anti-Target</a>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-section-title" data-lang="en">v2.0 — New</div>
+                <div class="nav-section-title" data-lang="vi">v2.0 — Mới</div>
+                <a class="nav-link" href="#regions" data-lang="en">Region System</a>
+                <a class="nav-link" href="#regions" data-lang="vi">Hệ thống vùng</a>
+                <a class="nav-link" href="#perm-visibility" data-lang="en">Permission Visibility</a>
+                <a class="nav-link" href="#perm-visibility" data-lang="vi">Hiển thị theo quyền</a>
+                <a class="nav-link" href="#placeholderapi" data-lang="en">PlaceholderAPI</a>
+                <a class="nav-link" href="#placeholderapi" data-lang="vi">PlaceholderAPI</a>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-section-title" data-lang="en">Reference</div>
+                <div class="nav-section-title" data-lang="vi">Tham chiếu</div>
+                <a class="nav-link" href="#commands" data-lang="en">Commands</a>
+                <a class="nav-link" href="#commands" data-lang="vi">Lệnh</a>
+                <a class="nav-link" href="#permissions" data-lang="en">Permissions</a>
+                <a class="nav-link" href="#permissions" data-lang="vi">Quyền hạn</a>
+                <a class="nav-link" href="#config" data-lang="en">Configuration</a>
+                <a class="nav-link" href="#config" data-lang="vi">Cấu hình</a>
+                <a class="nav-link" href="#messages" data-lang="en">Messages</a>
+                <a class="nav-link" href="#messages" data-lang="vi">Tin nhắn</a>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-section-title" data-lang="en">Architecture</div>
+                <div class="nav-section-title" data-lang="vi">Kiến trúc</div>
+                <a class="nav-link" href="#how-it-works" data-lang="en">How It Works</a>
+                <a class="nav-link" href="#how-it-works" data-lang="vi">Nguyên lý</a>
+                <a class="nav-link" href="#source-structure" data-lang="en">Source Structure</a>
+                <a class="nav-link" href="#source-structure" data-lang="vi">Cấu trúc mã nguồn</a>
+                <a class="nav-link" href="#use-cases" data-lang="en">RPG Use Cases</a>
+                <a class="nav-link" href="#use-cases" data-lang="vi">Ứng dụng RPG</a>
+            </nav>
+
+            <div class="lang-toggle">
+                <button class="lang-btn active" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" onclick="setLang('vi')">VI</button>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main">
+            <!-- ===== OVERVIEW ===== -->
+            <section id="overview">
+                <h2 data-lang="en">Overview</h2>
+                <h2 data-lang="vi">Tổng quan</h2>
+
+                <p data-lang="en">
+                    <strong>SLSilentMobs</strong> brings per-player mob instancing to Minecraft servers.
+                    Inspired by the private mob systems found in MMORPGs like <strong>Wynncraft</strong>,
+                    this plugin lets each player see and fight their own mobs &mdash; eliminating kill-stealing,
+                    reducing visual clutter, and enabling true instanced loot.
+                </p>
+                <p data-lang="vi">
+                    <strong>SLSilentMobs</strong> mang hệ thống mob cá nhân hóa đến server Minecraft.
+                    Lấy cảm hứng từ cơ chế mob riêng tư của các MMORPG như <strong>Wynncraft</strong>,
+                    plugin cho phép mỗi người chơi thấy và chiến đấu với mob riêng của mình &mdash; loại bỏ
+                    tranh giành mob, giảm lag hiển thị, và hỗ trợ loot cá nhân hoàn toàn.
+                </p>
+
+                <div class="feature-grid">
+                    <div class="feature-card" data-lang="en">
+                        <h4>Silent Mobs</h4>
+                        <p>Spawn mobs visible to a single player. Others cannot see, target, or interact with them.</p>
+                    </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>Global Mode</h4>
+                        <p>Automatically make every mob on the server private, with whitelist exceptions for bosses.</p>
+                    </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>Instanced Loot</h4>
+                        <p>Item drops are visible only to the killer. No more loot-stealing in crowded areas.</p>
+                    </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>Smart Lifecycle</h4>
+                        <p>Auto-despawn on timeout, player disconnect, and configurable per-player mob limits.</p>
+                    </div>
+
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Silent Mobs</h4>
+                        <p>Spawn mob chỉ 1 player thấy. Người khác không thể thấy, nhắm mục tiêu, hay tương tác.</p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Global Mode</h4>
+                        <p>Tự động biến tất cả mob trên server thành private, trừ boss được whitelist.</p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Loot cá nhân</h4>
+                        <p>Item rơi chỉ người giết mới thấy. Không còn tranh nhặt đồ ở vùng đông đúc.</p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Vòng đời thông minh</h4>
+                        <p>Tự despawn khi hết timeout, player ngắt kết nối, và giới hạn mob mỗi player có thể cấu hình.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== REQUIREMENTS ===== -->
+            <section id="requirements">
+                <h2 data-lang="en">Requirements</h2>
+                <h2 data-lang="vi">Yêu cầu hệ thống</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-lang="en">Dependency</th>
+                            <th data-lang="en">Version</th>
+                            <th data-lang="en">Status</th>
+                            <th data-lang="vi">Phụ thuộc</th>
+                            <th data-lang="vi">Phiên bản</th>
+                            <th data-lang="vi">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Spigot / Paper</td>
+                            <td>1.17+</td>
+                            <td><span class="badge badge-required" data-lang="en">Required</span><span
+                                    class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
+                        </tr>
+                        <tr>
+                            <td>Java</td>
+                            <td>17+</td>
+                            <td><span class="badge badge-required" data-lang="en">Required</span><span
+                                    class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
+                        </tr>
+                        <tr>
+                            <td>ProtocolLib</td>
+                            <td>5.4.0+</td>
+                            <td><span class="badge badge-required" data-lang="en">Required</span><span
+                                    class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
+                        </tr>
+                        <tr>
+                            <td>MythicMobs</td>
+                            <td>5.9+</td>
+                            <td><span class="badge badge-optional" data-lang="en">Optional</span><span
+                                    class="badge badge-optional" data-lang="vi">Tùy chọn</span></td>
+                        </tr>
+                        <tr>
+                            <td>PlaceholderAPI</td>
+                            <td>2.11+</td>
+                            <td><span class="badge badge-optional" data-lang="en">Optional</span><span
+                                    class="badge badge-optional" data-lang="vi">Tùy chọn</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="callout" data-lang="en">
+                    <strong>ProtocolLib</strong> is essential &mdash; SLSilentMobs uses packet-level entity hiding
+                    to control mob visibility. Without it, the plugin cannot function.
+                </div>
+                <div class="callout" data-lang="vi">
+                    <strong>ProtocolLib</strong> là bắt buộc &mdash; SLSilentMobs dùng can thiệp packet để
+                    ẩn/hiện entity. Không có ProtocolLib, plugin không thể hoạt động.
+                </div>
+            </section>
+
+            <!-- ===== INSTALLATION ===== -->
+            <section id="installation">
+                <h2 data-lang="en">Installation</h2>
+                <h2 data-lang="vi">Cài đặt</h2>
+                <ol data-lang="en">
+                    <li>Place <code>SLSilentMobs-1.0.0.jar</code> into your server's <code>plugins/</code> directory.
+                    </li>
+                    <li>Ensure <strong>ProtocolLib</strong> is installed. Optionally install <strong>MythicMobs</strong>
+                        for custom mob support.</li>
+                    <li>Restart the server.</li>
+                    <li>Edit the generated <code>plugins/SLSilentMobs/config.yml</code> to your liking.</li>
+                    <li>Run <code>/silentmob reload</code> to apply changes.</li>
+                </ol>
+                <ol data-lang="vi">
+                    <li>Đặt file <code>SLSilentMobs-1.0.0.jar</code> vào thư mục <code>plugins/</code> của server.</li>
+                    <li>Đảm bảo đã cài <strong>ProtocolLib</strong>. Tùy chọn cài <strong>MythicMobs</strong> để hỗ trợ
+                        mob tùy chỉnh.</li>
+                    <li>Khởi động lại server.</li>
+                    <li>Chỉnh sửa file <code>plugins/SLSilentMobs/config.yml</code> được tạo tự động.</li>
+                    <li>Chạy <code>/silentmob reload</code> để áp dụng thay đổi.</li>
+                </ol>
+            </section>
+
+            <!-- ===== SILENT MOBS ===== -->
+            <section id="silent-mobs">
+                <h2 data-lang="en">Silent Mobs (Manual)</h2>
+                <h2 data-lang="vi">Silent Mobs (Thủ công)</h2>
+
+                <p data-lang="en">
+                    Spawn a mob that is <strong>visible to exactly one player</strong>. All other players
+                    on the server will not see the entity at all &mdash; it is hidden at the network packet level.
+                </p>
+                <p data-lang="vi">
+                    Spawn một mob <strong>chỉ hiển thị với đúng một player</strong>. Tất cả player khác
+                    trên server hoàn toàn không thấy entity &mdash; nó được ẩn ở tầng network packet.
+                </p>
+
+                <h3 data-lang="en">Key behaviors</h3>
+                <h3 data-lang="vi">Hành vi chính</h3>
+                <ul data-lang="en">
+                    <li>Supports both <strong>vanilla mob types</strong> and <strong>MythicMobs</strong> IDs.</li>
+                    <li>The mob only attacks (targets) its owner player.</li>
+                    <li>Automatically despawns when the owner disconnects (configurable).</li>
+                    <li>Automatically despawns after the configured timeout expires.</li>
+                    <li>Players who join mid-session will <strong>not</strong> see existing silent mobs belonging to
+                        others.</li>
+                    <li>Per-player mob limit prevents resource abuse.</li>
+                </ul>
+                <ul data-lang="vi">
+                    <li>Hỗ trợ cả <strong>mob vanilla</strong> và ID <strong>MythicMobs</strong>.</li>
+                    <li>Mob chỉ tấn công (nhắm mục tiêu) player chủ sở hữu.</li>
+                    <li>Tự động despawn khi chủ sở hữu ngắt kết nối (có thể cấu hình).</li>
+                    <li>Tự động despawn khi hết thời gian timeout đã cấu hình.</li>
+                    <li>Player join giữa chừng sẽ <strong>không</strong> thấy silent mob của người khác.</li>
+                    <li>Giới hạn mob mỗi player để ngăn lạm dụng tài nguyên.</li>
+                </ul>
+
+                <pre><code><span class="hl-comment"># Spawn 3 zombies for player "Steve"</span>
+<span class="hl-cmd">/silentmob spawn Steve ZOMBIE 3</span>
+
+<span class="hl-comment"># Spawn a MythicMob "DungeonGoblin" at specific coordinates</span>
+<span class="hl-cmd">/silentmob spawn Steve DungeonGoblin 1 5 world 100 65 200</span></code></pre>
+            </section>
+
+            <!-- ===== GLOBAL MODE ===== -->
+            <section id="global-mode">
+                <h2 data-lang="en">Global Silent Mode</h2>
+                <h2 data-lang="vi">Chế độ Global Silent</h2>
+
+                <p data-lang="en">
+                    When enabled, <strong>every mob that spawns on the server</strong> is automatically
+                    assigned to the nearest player within a configurable radius. Only that player can see
+                    and interact with the mob.
+                </p>
+                <p data-lang="vi">
+                    Khi bật, <strong>mọi mob spawn trên server</strong> tự động được gán cho player
+                    gần nhất trong bán kính cấu hình. Chỉ player đó mới thấy và tương tác với mob.
+                </p>
+
+                <h3 data-lang="en">Whitelist</h3>
+                <h3 data-lang="vi">Danh sách trắng (Whitelist)</h3>
+                <p data-lang="en">
+                    Certain mobs &mdash; typically bosses &mdash; can be excluded from the global silent system.
+                    Whitelisted mobs remain <strong>visible to all players</strong>, allowing group content
+                    like raid bosses and world events.
+                </p>
+                <p data-lang="vi">
+                    Một số mob &mdash; thường là boss &mdash; có thể được loại trừ khỏi hệ thống global silent.
+                    Mob trong whitelist vẫn <strong>hiển thị cho tất cả player</strong>, cho phép nội dung
+                    nhóm như raid boss và sự kiện thế giới.
+                </p>
+                <div class="callout callout-green" data-lang="en">
+                    Whitelist supports both vanilla EntityType names (e.g. <code>ENDER_DRAGON</code>) and
+                    MythicMobs internal IDs (e.g. <code>WorldBoss_Dragon</code>).
+                </div>
+                <div class="callout callout-green" data-lang="vi">
+                    Whitelist hỗ trợ cả tên EntityType vanilla (VD: <code>ENDER_DRAGON</code>) lẫn
+                    ID MythicMobs (VD: <code>WorldBoss_Dragon</code>).
+                </div>
+
+                <h3 data-lang="en">Reassignment</h3>
+                <h3 data-lang="vi">Chuyển giao mob</h3>
+                <p data-lang="en">
+                    When the owner disconnects, the mob is reassigned to the nearest remaining player.
+                    If no players are nearby, the mob despawns (both behaviors are configurable).
+                </p>
+                <p data-lang="vi">
+                    Khi chủ sở hữu ngắt kết nối, mob được chuyển giao cho player gần nhất còn lại.
+                    Nếu không có player nào gần đó, mob sẽ despawn (cả hai hành vi đều cấu hình được).
+                </p>
+            </section>
+
+            <!-- ===== INSTANCED LOOT ===== -->
+            <section id="instanced-loot">
+                <h2 data-lang="en">Instanced Loot</h2>
+                <h2 data-lang="vi">Loot cá nhân (Instanced Loot)</h2>
+
+                <p data-lang="en">
+                    When a mob dies, its item drops are <strong>only visible to the player who killed it</strong>.
+                    Other players cannot see or pick up the dropped items.
+                </p>
+                <p data-lang="vi">
+                    Khi mob chết, item rơi ra <strong>chỉ hiển thị cho player đã giết nó</strong>.
+                    Player khác không thể thấy hay nhặt item đó.
+                </p>
+                <ul data-lang="en">
+                    <li>Experience orbs are given directly to the killer.</li>
+                    <li>Unclaimed items despawn after the configured timeout (default: 60 seconds).</li>
+                    <li>Can be applied to silent mobs only, or to <strong>all mobs</strong> server-wide.</li>
+                </ul>
+                <ul data-lang="vi">
+                    <li>Kinh nghiệm (EXP) được cộng trực tiếp cho người giết.</li>
+                    <li>Item không nhặt sẽ biến mất sau timeout cấu hình (mặc định: 60 giây).</li>
+                    <li>Có thể áp dụng chỉ cho silent mob, hoặc cho <strong>tất cả mob</strong> trên server.</li>
+                </ul>
+            </section>
+
+            <!-- ===== ANTI-TARGET ===== -->
+            <section id="anti-target">
+                <h2>Anti-Target</h2>
+                <p data-lang="en">
+                    Silent mobs will <strong>only target their owner</strong>. Even if another player
+                    stands right next to the mob, it will completely ignore them. This is enforced
+                    by intercepting targeting events at the server level.
+                </p>
+                <p data-lang="vi">
+                    Silent mob sẽ <strong>chỉ nhắm vào chủ sở hữu</strong>. Ngay cả khi player khác
+                    đứng ngay cạnh mob, mob sẽ hoàn toàn bỏ qua. Điều này được thực thi bằng cách
+                    can thiệp sự kiện nhắm mục tiêu ở tầng server.
+                </p>
+            </section>
+
+            <!-- ===== REGION SYSTEM ===== -->
+            <section id="regions">
+                <h2 data-lang="en">Region System <span class="badge badge-new">v2.0</span></h2>
+                <h2 data-lang="vi">Hệ thống vùng <span class="badge badge-new">v2.0</span></h2>
+
+                <p data-lang="en">
+                    Define rectangular zones where mobs are automatically made silent.
+                    Use the <strong>Wand Tool</strong> to select corners, then configure which mobs are silent,
+                    which players/permissions can see them.
+                </p>
+                <p data-lang="vi">
+                    Định nghĩa vùng chữ nhật nơi mob tự động trở thành silent.
+                    Dùng <strong>Wand Tool</strong> để chọn góc, sau đó cấu hình mob nào silent,
+                    player/quyền nào có thể thấy.
+                </p>
+
+                <h3 data-lang="en">Wand Tool</h3>
+                <h3 data-lang="vi">Công cụ Wand</h3>
+                <pre><code><span class="hl-comment"># Get the selection wand</span>
+<span class="hl-cmd">/silentmob wand</span>
+
+<span class="hl-comment"># Left Click a block → Set Pos1</span>
+<span class="hl-comment"># Right Click a block → Set Pos2</span>
+
+<span class="hl-comment"># Create a region from your selection</span>
+<span class="hl-cmd">/silentmob region create vip_farm</span></code></pre>
+
+                <h3 data-lang="en">Region Commands</h3>
+                <h3 data-lang="vi">Lệnh vùng</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-lang="en">Command</th>
+                            <th data-lang="en">Description</th>
+                            <th data-lang="vi">Lệnh</th>
+                            <th data-lang="vi">Mô tả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/sm region create &lt;name&gt;</code></td>
+                            <td data-lang="en">Create region from wand selection</td>
+                            <td data-lang="vi">Tạo vùng từ wand selection</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region delete &lt;name&gt;</code></td>
+                            <td data-lang="en">Delete a region</td>
+                            <td data-lang="vi">Xóa vùng</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region list</code></td>
+                            <td data-lang="en">List all regions</td>
+                            <td data-lang="vi">Liệt kê tất cả vùng</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region info &lt;name&gt;</code></td>
+                            <td data-lang="en">Show region details</td>
+                            <td data-lang="vi">Xem chi tiết vùng</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region addmob &lt;region&gt; &lt;mob&gt;</code></td>
+                            <td data-lang="en">Add mob to silent list</td>
+                            <td data-lang="vi">Thêm mob vào danh sách silent</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region addperm &lt;region&gt; &lt;perm&gt;</code></td>
+                            <td data-lang="en">Add visibility permission</td>
+                            <td data-lang="vi">Thêm quyền xem mob</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region addplayer &lt;region&gt; &lt;player&gt;</code></td>
+                            <td data-lang="en">Add allowed player</td>
+                            <td data-lang="vi">Thêm player được phép xem</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 data-lang="en">Config Example</h3>
+                <h3 data-lang="vi">Ví dụ cấu hình</h3>
+                <pre><code><span class="hl-comment"># config.yml — regions section</span>
+regions:
+  vip_farm:
+    world: world
+    pos1: {x: 100, y: 60, z: 200}
+    pos2: {x: 200, y: 120, z: 300}
+    silent-mobs: [ZOMBIE, SKELETON, SPIDER]
+    exempt-mobs: [ENDER_DRAGON]
+    allowed-players: []
+    allowed-permissions:
+      - silentmob.region.vip_farm
+      - rank.vip</code></pre>
+            </section>
+
+            <!-- ===== PERMISSION VISIBILITY ===== -->
+            <section id="perm-visibility">
+                <h2 data-lang="en">Permission-based Visibility <span class="badge badge-new">v2.0</span></h2>
+                <h2 data-lang="vi">Hiển thị theo quyền <span class="badge badge-new">v2.0</span></h2>
+
+                <p data-lang="en">
+                    Spawn mobs visible to <strong>all players with a specific permission</strong> instead of
+                    just one player. Use the <code>-p &lt;permission&gt;</code> flag when spawning.
+                </p>
+                <p data-lang="vi">
+                    Spawn mob hiển thị cho <strong>tất cả player có quyền cụ thể</strong> thay vì
+                    chỉ một player. Sử dụng flag <code>-p &lt;permission&gt;</code> khi spawn.
+                </p>
+
+                <pre><code><span class="hl-comment"># Mob visible to all players with vip.premium permission</span>
+<span class="hl-cmd">/silentmob spawn Steve ZOMBIE 1 1 -p vip.premium</span>
+
+<span class="hl-comment"># Mob visible to all players with silentmob.view permission</span>
+<span class="hl-cmd">/silentmob spawn Steve DungeonBoss 1 10 -p silentmob.view</span></code></pre>
+            </section>
+
+            <!-- ===== PLACEHOLDERAPI ===== -->
+            <section id="placeholderapi">
+                <h2 data-lang="en">PlaceholderAPI Integration <span class="badge badge-new">v2.0</span></h2>
+                <h2 data-lang="vi">Tích hợp PlaceholderAPI <span class="badge badge-new">v2.0</span></h2>
+
+                <p data-lang="en">
+                    When PlaceholderAPI is installed, SLSilentMobs registers the <code>%slsilentmobs_*%</code>
+                    expansion with the following placeholders:
+                </p>
+                <p data-lang="vi">
+                    Khi cài PlaceholderAPI, SLSilentMobs đăng ký expansion <code>%slsilentmobs_*%</code>
+                    với các placeholder sau:
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Placeholder</th>
+                            <th data-lang="en">Returns</th>
+                            <th data-lang="vi">Trả về</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>%slsilentmobs_count%</code></td>
+                            <td data-lang="en">Total silent mobs on server</td>
+                            <td data-lang="vi">Tổng số silent mob trên server</td>
+                        </tr>
+                        <tr>
+                            <td><code>%slsilentmobs_player_count%</code></td>
+                            <td data-lang="en">Player's active silent mob count</td>
+                            <td data-lang="vi">Số silent mob của player</td>
+                        </tr>
+                        <tr>
+                            <td><code>%slsilentmobs_global_status%</code></td>
+                            <td data-lang="en">Global mode ON/OFF</td>
+                            <td data-lang="vi">Trạng thái global ON/OFF</td>
+                        </tr>
+                        <tr>
+                            <td><code>%slsilentmobs_region_count%</code></td>
+                            <td data-lang="en">Total defined regions</td>
+                            <td data-lang="vi">Tổng số vùng đã định nghĩa</td>
+                        </tr>
+                        <tr>
+                            <td><code>%slsilentmobs_player_in_region%</code></td>
+                            <td data-lang="en">Region name player is in (or "none")</td>
+                            <td data-lang="vi">Tên vùng player đang ở (hoặc "none")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- ===== COMMANDS ===== -->
+            <section id="commands">
+                <h2 data-lang="en">Commands</h2>
+                <h2 data-lang="vi">Lệnh</h2>
+
+                <p data-lang="en">
+                    Base command: <code>/silentmob</code> &mdash; Aliases: <code>/sm</code>, <code>/slmob</code>
+                </p>
+                <p data-lang="vi">
+                    Lệnh chính: <code>/silentmob</code> &mdash; Viết tắt: <code>/sm</code>, <code>/slmob</code>
+                </p>
+
+                <h3 data-lang="en">Core Commands</h3>
+                <h3 data-lang="vi">Lệnh chính</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-lang="en">Command</th>
+                            <th data-lang="en">Description</th>
+                            <th data-lang="vi">Lệnh</th>
+                            <th data-lang="vi">Mô tả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/silentmob spawn &lt;player&gt; &lt;mob&gt; [amount] [level] [world] [x] [y] [z]</code>
+                            </td>
+                            <td data-lang="en">Spawn silent mob(s) for a player</td>
+                            <td data-lang="vi">Spawn silent mob cho player</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob despawn &lt;player&gt; [mob]</code></td>
+                            <td data-lang="en">Remove silent mobs for a player (optionally filter by type)</td>
+                            <td data-lang="vi">Xóa silent mob của player (tùy chọn lọc theo loại)</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob despawnall</code></td>
+                            <td data-lang="en">Remove all silent mobs server-wide</td>
+                            <td data-lang="vi">Xóa tất cả silent mob trên server</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob list [player]</code></td>
+                            <td data-lang="en">List active silent mobs</td>
+                            <td data-lang="vi">Xem danh sách silent mob đang hoạt động</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob reload</code></td>
+                            <td data-lang="en">Reload configuration</td>
+                            <td data-lang="vi">Tải lại cấu hình</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 data-lang="en">Global Silent Commands</h3>
+                <h3 data-lang="vi">Lệnh Global Silent</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-lang="en">Command</th>
+                            <th data-lang="en">Description</th>
+                            <th data-lang="vi">Lệnh</th>
+                            <th data-lang="vi">Mô tả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/silentmob global on</code></td>
+                            <td data-lang="en">Enable global silent mode</td>
+                            <td data-lang="vi">Bật chế độ global silent</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob global off</code></td>
+                            <td data-lang="en">Disable global silent mode</td>
+                            <td data-lang="vi">Tắt chế độ global silent</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob global status</code></td>
+                            <td data-lang="en">Show current global silent status</td>
+                            <td data-lang="vi">Xem trạng thái global silent hiện tại</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob global whitelist add &lt;mob&gt;</code></td>
+                            <td data-lang="en">Add a mob to the whitelist (exempt from silent)</td>
+                            <td data-lang="vi">Thêm mob vào whitelist (không bị silent)</td>
+                        </tr>
+                        <tr>
+                            <td><code>/silentmob global whitelist remove &lt;mob&gt;</code></td>
+                            <td data-lang="en">Remove a mob from the whitelist</td>
+                            <td data-lang="vi">Xóa mob khỏi whitelist</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 data-lang="en">Examples</h3>
+                <h3 data-lang="vi">Ví dụ</h3>
+                <pre><code><span class="hl-comment"># Spawn 1 zombie for Steve</span>
+<span class="hl-cmd">/silentmob spawn Steve ZOMBIE</span>
+
+<span class="hl-comment"># Spawn 5 skeletons (level 10) at specific location</span>
+<span class="hl-cmd">/silentmob spawn Steve SKELETON 5 10 world 100 65 200</span>
+
+<span class="hl-comment"># Spawn a MythicMob for Steve</span>
+<span class="hl-cmd">/silentmob spawn Steve DungeonGoblin</span>
+
+<span class="hl-comment"># Enable global mode and whitelist a boss</span>
+<span class="hl-cmd">/silentmob global on</span>
+<span class="hl-cmd">/silentmob global whitelist add WorldBoss_Dragon</span></code></pre>
+            </section>
+
+            <!-- ===== PERMISSIONS ===== -->
+            <section id="permissions">
+                <h2 data-lang="en">Permissions</h2>
+                <h2 data-lang="vi">Quyền hạn</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            <th data-lang="en">Description</th>
+                            <th data-lang="en">Default</th>
+                            <th data-lang="vi">Mô tả</th>
+                            <th data-lang="vi">Mặc định</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>silentmob.use</code></td>
+                            <td data-lang="en">Access the <code>/silentmob</code> command</td>
+                            <td data-lang="en">OP</td>
+                            <td data-lang="vi">Sử dụng lệnh <code>/silentmob</code></td>
+                            <td data-lang="vi">OP</td>
+                        </tr>
+                        <tr>
+                            <td><code>silentmob.admin</code></td>
+                            <td data-lang="en">Admin commands: <code>global</code>, <code>reload</code>,
+                                <code>despawnall</code>
+                            </td>
+                            <td data-lang="en">OP</td>
+                            <td data-lang="vi">Lệnh admin: <code>global</code>, <code>reload</code>,
+                                <code>despawnall</code>
+                            </td>
+                            <td data-lang="vi">OP</td>
+                        </tr>
+                        <tr>
+                            <td><code>silentmob.wand</code></td>
+                            <td data-lang="en">Use the region selection wand</td>
+                            <td data-lang="en">OP</td>
+                            <td data-lang="vi">Sử dụng wand chọn vùng</td>
+                            <td data-lang="vi">OP</td>
+                        </tr>
+                        <tr>
+                            <td><code>silentmob.region.*</code></td>
+                            <td data-lang="en">Wildcard for per-region visibility</td>
+                            <td data-lang="en">OP</td>
+                            <td data-lang="vi">Wildcard quyền xem theo vùng</td>
+                            <td data-lang="vi">OP</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- ===== CONFIG ===== -->
+            <section id="config">
+                <h2 data-lang="en">Configuration</h2>
+                <h2 data-lang="vi">Cấu hình</h2>
+
+                <p data-lang="en">All settings are in <code>plugins/SLSilentMobs/config.yml</code>.</p>
+                <p data-lang="vi">Tất cả cài đặt nằm trong <code>plugins/SLSilentMobs/config.yml</code>.</p>
+
+                <h3 data-lang="en">General Settings</h3>
+                <h3 data-lang="vi">Cài đặt chung</h3>
+                <pre><code><span class="hl-key">settings</span>:
+  <span class="hl-key">max-amount</span>: <span class="hl-val">50</span>           <span class="hl-comment"># max mobs per spawn command</span>
+  <span class="hl-key">default-timeout</span>: <span class="hl-val">300</span>      <span class="hl-comment"># lifetime in seconds (0 = infinite)</span>
+  <span class="hl-key">despawn-on-quit</span>: <span class="hl-val">true</span>     <span class="hl-comment"># despawn when owner disconnects</span>
+  <span class="hl-key">mob-target-owner-only</span>: <span class="hl-val">true</span>  <span class="hl-comment"># mob only attacks its owner</span>
+  <span class="hl-key">death-notification</span>: <span class="hl-val">true</span>  <span class="hl-comment"># notify owner on mob death</span>
+  <span class="hl-key">max-mobs-per-player</span>: <span class="hl-val">10</span>   <span class="hl-comment"># per-player mob cap</span></code></pre>
+
+                <h3 data-lang="en">Global Silent Mode</h3>
+                <h3 data-lang="vi">Chế độ Global Silent</h3>
+                <pre><code><span class="hl-key">global-silent</span>:
+  <span class="hl-key">enabled</span>: <span class="hl-val">false</span>
+  <span class="hl-key">assign-radius</span>: <span class="hl-val">32</span>        <span class="hl-comment"># radius to find nearest player</span>
+  <span class="hl-key">whitelist</span>:
+    <span class="hl-key">vanilla</span>:
+      - <span class="hl-str">ENDER_DRAGON</span>
+      - <span class="hl-str">WITHER</span>
+      - <span class="hl-str">WARDEN</span>
+      - <span class="hl-str">ELDER_GUARDIAN</span>
+    <span class="hl-key">mythicmobs</span>: []
+  <span class="hl-key">reassign-on-owner-quit</span>: <span class="hl-val">true</span>
+  <span class="hl-key">despawn-if-no-player</span>: <span class="hl-val">true</span></code></pre>
+
+                <h3 data-lang="en">Silent Item Drops</h3>
+                <h3 data-lang="vi">Loot cá nhân</h3>
+                <pre><code><span class="hl-key">silent-drops</span>:
+  <span class="hl-key">enabled</span>: <span class="hl-val">true</span>
+  <span class="hl-key">apply-to-silent-mobs-only</span>: <span class="hl-val">true</span>  <span class="hl-comment"># only silent mobs</span>
+  <span class="hl-key">apply-globally</span>: <span class="hl-val">false</span>            <span class="hl-comment"># true = all mobs</span>
+  <span class="hl-key">drop-timeout</span>: <span class="hl-val">60</span>                <span class="hl-comment"># seconds before item despawns</span></code></pre>
+            </section>
+
+            <!-- ===== MESSAGES ===== -->
+            <section id="messages">
+                <h2 data-lang="en">Messages</h2>
+                <h2 data-lang="vi">Tin nhắn</h2>
+
+                <p data-lang="en">
+                    All player-facing messages are customizable in the <code>messages</code> section of
+                    <code>config.yml</code>.
+                    Supports Minecraft color codes with the <code>&amp;</code> prefix.
+                </p>
+                <p data-lang="vi">
+                    Tất cả tin nhắn hiển thị cho player đều tùy chỉnh được trong phần <code>messages</code> của
+                    <code>config.yml</code>.
+                    Hỗ trợ mã màu Minecraft với tiền tố <code>&amp;</code>.
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th data-lang="en">Default Value</th>
+                            <th data-lang="vi">Giá trị mặc định</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>prefix</code></td>
+                            <td colspan="2"><code>&amp;8[&amp;bSilentMobs&amp;8]</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>spawn-success</code></td>
+                            <td colspan="2"><code>&amp;aSpawned &amp;e{amount} &amp;asilent mob(s)...</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>mob-death</code></td>
+                            <td colspan="2"><code>&amp;7Your silent mob &amp;e{mob} &amp;7has died</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>max-mobs-reached</code></td>
+                            <td colspan="2"><code>&amp;cPlayer &amp;e{player} &amp;chas reached max...</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>global-enabled</code></td>
+                            <td colspan="2"><code>&amp;aGlobal Silent mode &amp;2ENABLED</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>reload-success</code></td>
+                            <td colspan="2"><code>&amp;aConfig reloaded successfully</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p data-lang="en">Available placeholders: <code>{player}</code>, <code>{mob}</code>,
+                    <code>{amount}</code>, <code>{max}</code>, <code>{world}</code>, <code>{x}</code>, <code>{y}</code>,
+                    <code>{z}</code>, <code>{age}</code>, <code>{status}</code>, <code>{count}</code>.
+                </p>
+                <p data-lang="vi">Placeholder khả dụng: <code>{player}</code>, <code>{mob}</code>,
+                    <code>{amount}</code>, <code>{max}</code>, <code>{world}</code>, <code>{x}</code>, <code>{y}</code>,
+                    <code>{z}</code>, <code>{age}</code>, <code>{status}</code>, <code>{count}</code>.
+                </p>
+            </section>
+
+            <!-- ===== HOW IT WORKS ===== -->
+            <section id="how-it-works">
+                <h2 data-lang="en">How It Works</h2>
+                <h2 data-lang="vi">Nguyên lý hoạt động</h2>
+
+                <h3 data-lang="en">Packet-Level Entity Hiding</h3>
+                <h3 data-lang="vi">Ẩn Entity ở tầng Packet</h3>
+                <p data-lang="en">
+                    SLSilentMobs does <strong>not</strong> use Bukkit's built-in <code>Player.hideEntity()</code>
+                    method,
+                    which has known limitations. Instead, it implements a custom <strong>EntityHider</strong> powered
+                    by ProtocolLib that intercepts outgoing packets:
+                </p>
+                <p data-lang="vi">
+                    SLSilentMobs <strong>không</strong> sử dụng phương thức <code>Player.hideEntity()</code> tích hợp
+                    của Bukkit vốn có nhiều hạn chế. Thay vào đó, plugin triển khai <strong>EntityHider</strong>
+                    tùy chỉnh dựa trên ProtocolLib để chặn các packet:
+                </p>
+
+                <ul>
+                    <li><code>SPAWN_ENTITY</code> &mdash; <span data-lang="en">blocked for non-owner players</span><span
+                            data-lang="vi">bị chặn cho player không phải chủ sở hữu</span></li>
+                    <li><code>ENTITY_METADATA</code> &mdash; <span data-lang="en">prevents metadata leaks</span><span
+                            data-lang="vi">ngăn rò rỉ metadata</span></li>
+                    <li><code>ENTITY_EQUIPMENT</code> &mdash; <span data-lang="en">hides mob gear</span><span
+                            data-lang="vi">ẩn trang bị mob</span></li>
+                    <li><code>REL_ENTITY_MOVE</code> &mdash; <span data-lang="en">hides movement</span><span
+                            data-lang="vi">ẩn di chuyển</span></li>
+                    <li><code>ENTITY_VELOCITY</code> &mdash; <span data-lang="en">hides velocity changes</span><span
+                            data-lang="vi">ẩn thay đổi vận tốc</span></li>
+                    <li><code>ENTITY_STATUS</code> / <code>ENTITY_SOUND</code> &mdash; <span data-lang="en">hides
+                            effects and audio</span><span data-lang="vi">ẩn hiệu ứng và âm thanh</span></li>
+                </ul>
+
+                <div class="callout" data-lang="en">
+                    The EntityHider operates on a <strong>WHITELIST</strong> policy: entities are hidden from everyone
+                    by default, and only explicitly revealed to designated viewers.
+                </div>
+                <div class="callout" data-lang="vi">
+                    EntityHider hoạt động theo chính sách <strong>WHITELIST</strong>: entity bị ẩn với tất cả
+                    mọi người theo mặc định, và chỉ được hiển thị cho viewer được chỉ định.
+                </div>
+            </section>
+
+            <!-- ===== SOURCE STRUCTURE ===== -->
+            <section id="source-structure">
+                <h2 data-lang="en">Source Structure</h2>
+                <h2 data-lang="vi">Cấu trúc mã nguồn</h2>
+
+                <div class="tree">
+                    <div class="tree-root-label">📂 src/main/java/vn/saly/silentmobs/</div>
+                    <ul class="tree-list">
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📄</span>
+                                <span class="tree-name">SLSilentMobs.java</span>
+                                <span class="tree-desc">Main plugin class</span>
+                            </div>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">command/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMobCommand.java</span><span
+                                            class="tree-desc">Command handler</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMobTab.java</span><span class="tree-desc">Tab
+                                            completer</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">global/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">GlobalSilentManager.java</span><span
+                                            class="tree-desc">Auto-silent all spawned mobs</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">GlobalSilentConfig.java</span><span
+                                            class="tree-desc">Whitelist configuration</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">listener/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMobDeathListener.java</span><span
+                                            class="tree-desc">Death event cleanup</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMobTargetListener.java</span><span
+                                            class="tree-desc">Anti-target enforcement</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">PlayerConnectionListener.java</span><span
+                                            class="tree-desc">Join/quit handling</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">loot/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentDropManager.java</span><span
+                                            class="tree-desc">Instanced loot logic</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentDropListener.java</span><span
+                                            class="tree-desc">Death drop interception</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">manager/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMobManager.java</span><span
+                                            class="tree-desc">Central mob lifecycle</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">model/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMob.java</span><span class="tree-desc">Mob data
+                                            model</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">placeholder/</span>
+                                <span class="tree-badge">v2.0</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentMobsPlaceholder.java</span><span
+                                            class="tree-desc">PAPI expansion</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">region/</span>
+                                <span class="tree-badge">v2.0</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">SilentRegion.java</span><span class="tree-desc">Region
+                                            data model</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">RegionManager.java</span><span class="tree-desc">CRUD +
+                                            persistence</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">WandManager.java</span><span class="tree-desc">Wand tool +
+                                            selections</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">WandListener.java</span><span class="tree-desc">Click
+                                            event handler</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">RegionSilentListener.java</span><span
+                                            class="tree-desc">Spawn interception</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">task/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">MobTimeoutTask.java</span><span class="tree-desc">Periodic
+                                            cleanup</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="tree-item">
+                            <div class="tree-item-row">
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-name is-dir">visibility/</span>
+                            </div>
+                            <ul class="tree-list">
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">EntityHider.java</span><span class="tree-desc">ProtocolLib
+                                            packet hiding</span></div>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ===== USE CASES ===== -->
+            <section id="use-cases">
+                <h2 data-lang="en">RPG Use Cases</h2>
+                <h2 data-lang="vi">Ứng dụng RPG</h2>
+
+                <div class="feature-grid">
+                    <div class="feature-card" data-lang="en">
+                        <h4>Personal Quest Mobs</h4>
+                        <p>NPCs trigger <code>/silentmob spawn</code> to create quest mobs private to the questing
+                            player. No interference from others.</p>
+                    </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>Farming Zones</h4>
+                        <p>Enable Global Mode so each player sees their own mob spawns. No kill-stealing, no
+                            competition.</p>
+                    </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>Dungeon Bosses</h4>
+                        <p>Whitelist boss mobs so the entire party can see and fight them together while regular mobs
+                            stay private.</p>
+                    </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>PvE Events</h4>
+                        <p>Spawn waves of private mobs for individual players during server events without visual chaos.
+                        </p>
+                    </div>
+
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Mob nhiệm vụ cá nhân</h4>
+                        <p>NPC kích hoạt <code>/silentmob spawn</code> để tạo mob nhiệm vụ riêng cho player đang làm
+                            quest. Không bị ảnh hưởng bởi người khác.</p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Vùng Farm</h4>
+                        <p>Bật Global Mode để mỗi player thấy mob riêng. Không tranh giành, không cạnh tranh.</p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Boss Dungeon</h4>
+                        <p>Whitelist mob boss để cả party thấy và đánh cùng nhau, trong khi mob thường vẫn riêng tư.</p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Sự kiện PvE</h4>
+                        <p>Spawn đợt mob riêng cho từng player trong sự kiện server mà không gây hỗn loạn hình ảnh.</p>
+                    </div>
+                </div>
+
+                <h3 data-lang="en">Example: Complete RPG Setup</h3>
+                <h3 data-lang="vi">Ví dụ: Setup RPG hoàn chỉnh</h3>
+                <pre><code><span class="hl-comment"># 1. Enable global silent mode</span>
+<span class="hl-cmd">/silentmob global on</span>
+
+<span class="hl-comment"># 2. Whitelist all important bosses</span>
+<span class="hl-cmd">/silentmob global whitelist add ENDER_DRAGON</span>
+<span class="hl-cmd">/silentmob global whitelist add WITHER</span>
+<span class="hl-cmd">/silentmob global whitelist add DungeonBoss_Dragon</span>
+
+<span class="hl-comment"># 3. Quest NPC triggers (via command blocks or scripting)</span>
+<span class="hl-cmd">/silentmob spawn {player} QuestMob_Goblin 3 5</span>
+
+<span class="hl-comment"># Result: All farming mobs are private, bosses are shared,</span>
+<span class="hl-comment"># quest mobs are solo, and loot is instanced.</span></code></pre>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Language switcher
+        function setLang(lang) {
+            document.body.classList.toggle('lang-vi', lang === 'vi');
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                b.classList.toggle('active', b.textContent.trim() === lang.toUpperCase());
+            });
+            localStorage.setItem('slsm-lang', lang);
+        }
+        (function () {
+            var saved = localStorage.getItem('slsm-lang');
+            if (saved) setLang(saved);
+        })();
+
+        // Scroll spy
+        var links = document.querySelectorAll('.nav-link');
+        var sections = [];
+        document.querySelectorAll('section[id]').forEach(function (s) { sections.push(s); });
+        function onScroll() {
+            var scrollY = window.scrollY + 60;
+            var current = '';
+            for (var i = 0; i < sections.length; i++) {
+                if (sections[i].offsetTop <= scrollY) current = sections[i].id;
+            }
+            links.forEach(function (l) {
+                l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+            });
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    </script>
+</body>
+
+</html>
