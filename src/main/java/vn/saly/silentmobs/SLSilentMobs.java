@@ -8,6 +8,7 @@ import vn.saly.silentmobs.global.GlobalSilentConfig;
 import vn.saly.silentmobs.global.GlobalSilentManager;
 import vn.saly.silentmobs.listener.PlayerConnectionListener;
 import vn.saly.silentmobs.listener.SilentMobDeathListener;
+import vn.saly.silentmobs.listener.SilentMobDamageListener;
 import vn.saly.silentmobs.listener.SilentMobTargetListener;
 import vn.saly.silentmobs.loot.SilentDropListener;
 import vn.saly.silentmobs.loot.SilentDropManager;
@@ -73,6 +74,7 @@ public class SLSilentMobs extends JavaPlugin {
         // Register listeners
         getServer().getPluginManager().registerEvents(new SilentMobDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new SilentMobTargetListener(this), this);
+        getServer().getPluginManager().registerEvents(new SilentMobDamageListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(this), this);
         getServer().getPluginManager().registerEvents(new SilentDropListener(this), this);
         getServer().getPluginManager().registerEvents(new WandListener(this), this);
