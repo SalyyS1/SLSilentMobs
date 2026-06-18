@@ -41,10 +41,13 @@ public class SilentMobDamageListener implements Listener {
             return;
         }
 
-        // Only the owner can damage their own silent mob
-        if (!damager.getUniqueId().equals(silentMob.getOwnerUUID())) {
-            event.setCancelled(true);
-        }
+        // Only the owner (or owner's party member) can damage the silent mob
+        if (damager.getUniqueId().equals(silentMob.getOwnerUUID()))
+            return;
+        if (plugin.getPartyHook().isInSameParty(silentMob.getOwnerUUID(), damager))
+            return;
+
+        event.setCancelled(true);
     }
 
     /**

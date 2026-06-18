@@ -9,6 +9,7 @@ depend:
 softdepend:
   - MythicMobs
   - PlaceholderAPI
+  - MMOCore
 commands:
   silentmob:
     description: Manage silent mobs, regions, and visibility

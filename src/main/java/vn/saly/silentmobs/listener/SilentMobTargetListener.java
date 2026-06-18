@@ -36,9 +36,15 @@ public class SilentMobTargetListener implements Listener {
         if (target == null)
             return;
 
-        // If target is NOT the owner, cancel
-        if (!target.getUniqueId().equals(silentMob.getOwnerUUID())) {
-            event.setCancelled(true);
-        }
+        // Allow targeting the owner
+        if (target.getUniqueId().equals(silentMob.getOwnerUUID()))
+            return;
+
+        // Allow targeting the owner's party members (MMOCore)
+        if (target instanceof org.bukkit.entity.Player targetPlayer
+                && plugin.getPartyHook().isInSameParty(silentMob.getOwnerUUID(), targetPlayer))
+            return;
+
+        event.setCancelled(true);
     }
 }

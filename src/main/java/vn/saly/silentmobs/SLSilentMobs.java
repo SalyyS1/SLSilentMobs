@@ -6,6 +6,7 @@ import vn.saly.silentmobs.command.SilentMobTab;
 import vn.saly.silentmobs.config.ConfigManager;
 import vn.saly.silentmobs.global.GlobalSilentConfig;
 import vn.saly.silentmobs.global.GlobalSilentManager;
+import vn.saly.silentmobs.hook.PartyHook;
 import vn.saly.silentmobs.listener.PlayerConnectionListener;
 import vn.saly.silentmobs.listener.SilentMobDeathListener;
 import vn.saly.silentmobs.listener.SilentMobDamageListener;
@@ -44,6 +45,7 @@ public class SLSilentMobs extends JavaPlugin {
     private SilentDropManager silentDropManager;
     private RegionManager regionManager;
     private WandManager wandManager;
+    private PartyHook partyHook;
 
     @Override
     public void onEnable() {
@@ -53,6 +55,9 @@ public class SLSilentMobs extends JavaPlugin {
 
         // Initialize EntityHider (ProtocolLib packet-level visibility)
         entityHider = new EntityHider(this);
+
+        // MMOCore party hook (optional — degrades to no-op if MMOCore absent)
+        partyHook = new PartyHook(this);
 
         // Initialize managers
         silentMobManager = new SilentMobManager(this, entityHider);
@@ -99,6 +104,7 @@ public class SLSilentMobs extends JavaPlugin {
         getLogger().info("SLSilentMobs v" + getDescription().getVersion() + " enabled | SalyVn");
         getLogger().info("Language: " + configManager.getLanguage().toUpperCase());
         getLogger().info("Global Silent: " + (globalSilentManager.isEnabled() ? "ON" : "OFF"));
+        getLogger().info("Party sharing (MMOCore): " + (partyHook.isActive() ? "ON" : "OFF"));
         getLogger().info("Regions loaded: " + regionManager.getRegionCount());
     }
 
@@ -158,5 +164,9 @@ public class SLSilentMobs extends JavaPlugin {
 
     public WandManager getWandManager() {
         return wandManager;
+    }
+
+    public PartyHook getPartyHook() {
+        return partyHook;
     }
 }

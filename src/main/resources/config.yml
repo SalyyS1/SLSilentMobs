@@ -45,3 +45,13 @@ global-silent:
   reassign-on-owner-quit: true
   # Despawn mob if no player is nearby
   despawn-if-no-player: true
+
+# ============================================
+# PARTY SHARING (MMOCore)
+# When enabled, a silent mob owned by a player is
+# also visible to — and damageable/targetable by —
+# the online members of that player's MMOCore party.
+# Requires MMOCore installed; ignored otherwise.
+# ============================================
+party:
+  share-with-party: false

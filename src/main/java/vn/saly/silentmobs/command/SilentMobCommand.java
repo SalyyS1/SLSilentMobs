@@ -606,6 +606,7 @@ public class SilentMobCommand implements CommandExecutor {
         plugin.getConfigManager().reloadAll();
         plugin.getGlobalSilentConfig().load(plugin.getConfigManager().getConfig());
         plugin.getRegionManager().loadRegions();
+        plugin.getPartyHook().refresh();
         sendMsg(sender, cfgMsg("reload-success"));
     }
 

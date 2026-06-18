@@ -2,7 +2,7 @@ package vn.saly.silentmobs.manager;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.model.SilentMob;
 import vn.saly.silentmobs.visibility.EntityHider;
 
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  */
 public class SilentMobManager {
 
-    private final Plugin plugin;
+    private final SLSilentMobs plugin;
     private final EntityHider entityHider;
 
     // ownerUUID -> list of silent mobs
@@ -24,7 +24,7 @@ public class SilentMobManager {
     // entityId -> SilentMob (reverse lookup)
     private final Map<Integer, SilentMob> entityIndex = new ConcurrentHashMap<>();
 
-    public SilentMobManager(Plugin plugin, EntityHider entityHider) {
+    public SilentMobManager(SLSilentMobs plugin, EntityHider entityHider) {
         this.plugin = plugin;
         this.entityHider = entityHider;
     }
@@ -49,6 +49,21 @@ public class SilentMobManager {
                     entityHider.hideFromAll(mob.getEntity(), viewer);
                 }
             }
+
+            // Additively reveal to the owner's online party members (MMOCore)
+            addPartyViewers(mob);
+        }
+    }
+
+    /**
+     * Reveal a tracked mob to all online MMOCore party members of its owner.
+     * No-op when party sharing is inactive or the owner has no party.
+     */
+    public void addPartyViewers(SilentMob mob) {
+        if (mob.getEntity() == null)
+            return;
+        for (Player member : plugin.getPartyHook().getOnlinePartyMembers(mob.getOwnerUUID())) {
+            entityHider.addViewer(mob.getEntityId(), member.getUniqueId());
         }
     }
 
@@ -245,6 +260,8 @@ public class SilentMobManager {
         if (newMob.getEntity() != null) {
             entityIndex.put(newMob.getEntityId(), newMob);
             entityHider.hideFromAll(newMob.getEntity(), newOwner);
+            // Reveal to the new owner's party members
+            addPartyViewers(newMob);
         }
     }
 
@@ -261,12 +278,17 @@ public class SilentMobManager {
     public void hideAllFrom(Player player) {
         for (Map.Entry<Integer, SilentMob> entry : entityIndex.entrySet()) {
             SilentMob mob = entry.getValue();
-            if (mob.isAlive() && !mob.canView(player)) {
-                entityHider.hideFromPlayer(mob.getEntity(), player);
-            }
-            // If player CAN view (owner or permission), ensure they are a viewer
-            if (mob.isAlive() && mob.canView(player)) {
+            if (!mob.isAlive())
+                continue;
+
+            // Visible if owner/permission OR an online party member of the owner
+            boolean canSee = mob.canView(player)
+                    || plugin.getPartyHook().isInSameParty(mob.getOwnerUUID(), player);
+
+            if (canSee) {
                 entityHider.addViewer(mob.getEntityId(), player.getUniqueId());
+            } else {
+                entityHider.hideFromPlayer(mob.getEntity(), player);
             }
         }
     }
