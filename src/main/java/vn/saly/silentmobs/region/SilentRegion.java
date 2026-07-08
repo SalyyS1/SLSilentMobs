@@ -24,6 +24,8 @@ public class SilentRegion {
     private final Set<UUID> allowedPlayers = new HashSet<>();
     // Permissions that grant visibility to silent mobs
     private final Set<String> allowedPermissions = new HashSet<>();
+    // Per-player mob spawns triggered when entering this region
+    private final List<RegionSpawnEntry> spawnEntries = new ArrayList<>();
 
     public SilentRegion(String name, String worldName, Location pos1, Location pos2) {
         this.name = name;
@@ -173,5 +175,18 @@ public class SilentRegion {
 
     public Set<String> getAllowedPermissions() {
         return Collections.unmodifiableSet(allowedPermissions);
+    }
+
+    // --- Region Spawn Entries ---
+    public void addSpawnEntry(RegionSpawnEntry entry) {
+        spawnEntries.add(entry);
+    }
+
+    public boolean removeSpawnEntry(String mobId) {
+        return spawnEntries.removeIf(entry -> entry.getMobId().equalsIgnoreCase(mobId));
+    }
+
+    public List<RegionSpawnEntry> getSpawnEntries() {
+        return Collections.unmodifiableList(spawnEntries);
     }
 }

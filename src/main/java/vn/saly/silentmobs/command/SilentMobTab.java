@@ -29,7 +29,8 @@ public class SilentMobTab implements TabCompleter {
     private static final List<String> REGION_SUBS = Arrays.asList(
             "create", "delete", "list", "info",
             "addmob", "removemob", "exempt", "unexempt",
-            "addplayer", "removeplayer", "addperm", "removeperm");
+            "addplayer", "removeplayer", "addperm", "removeperm",
+            "addspawn", "removespawn", "listspawns");
 
     public SilentMobTab(SLSilentMobs plugin) {
         this.plugin = plugin;
@@ -120,14 +121,24 @@ public class SilentMobTab implements TabCompleter {
 
         if (args.length == 4) {
             switch (sub) {
-                case "addmob", "removemob", "exempt", "unexempt":
+                case "addmob", "removemob", "exempt", "unexempt", "addspawn":
                     return filterMobTypes(args[3]);
+                case "removespawn":
+                    return filterRegionSpawnNames(args[2], args[3]);
                 case "addplayer", "removeplayer":
                     return filterPlayers(args[3]);
                 case "addperm", "removeperm":
                     return Arrays.asList("silentmob.region.", "vip.", "rank.");
             }
         }
+        if (args.length == 5 && sub.equals("addspawn"))
+            return Arrays.asList("1", "2", "3", "5");
+        if (args.length == 6 && sub.equals("addspawn"))
+            return Arrays.asList("1", "5", "10");
+        if (args.length == 7 && sub.equals("addspawn"))
+            return Arrays.asList("30", "60", "120", "300");
+        if (args.length == 8 && sub.equals("addspawn"))
+            return Arrays.asList("0", "4", "8", "12");
 
         return Collections.emptyList();
     }
@@ -178,6 +189,18 @@ public class SilentMobTab implements TabCompleter {
         String lower = input.toLowerCase();
         return plugin.getRegionManager().getAllRegions().stream()
                 .map(SilentRegion::getName)
+                .filter(name -> name.toLowerCase().startsWith(lower))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> filterRegionSpawnNames(String regionName, String input) {
+        SilentRegion region = plugin.getRegionManager().getRegion(regionName);
+        if (region == null)
+            return Collections.emptyList();
+
+        String lower = input.toLowerCase();
+        return region.getSpawnEntries().stream()
+                .map(entry -> entry.getMobId())
                 .filter(name -> name.toLowerCase().startsWith(lower))
                 .collect(Collectors.toList());
     }

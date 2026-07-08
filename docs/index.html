@@ -696,7 +696,7 @@
                     <tbody>
                         <tr>
                             <td>Spigot / Paper</td>
-                            <td>1.17+</td>
+                            <td>1.21.5+</td>
                             <td><span class="badge badge-required" data-lang="en">Required</span><span
                                     class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
                         </tr>
@@ -741,7 +741,7 @@
                 <h2 data-lang="en">Installation</h2>
                 <h2 data-lang="vi">Cài đặt</h2>
                 <ol data-lang="en">
-                    <li>Place <code>SLSilentMobs-1.0.0.jar</code> into your server's <code>plugins/</code> directory.
+                    <li>Place <code>SLSilentMobs-2.2.0.jar</code> into your server's <code>plugins/</code> directory.
                     </li>
                     <li>Ensure <strong>ProtocolLib</strong> is installed. Optionally install <strong>MythicMobs</strong>
                         for custom mob support.</li>
@@ -750,7 +750,7 @@
                     <li>Run <code>/silentmob reload</code> to apply changes.</li>
                 </ol>
                 <ol data-lang="vi">
-                    <li>Đặt file <code>SLSilentMobs-1.0.0.jar</code> vào thư mục <code>plugins/</code> của server.</li>
+                    <li>Đặt file <code>SLSilentMobs-2.2.0.jar</code> vào thư mục <code>plugins/</code> của server.</li>
                     <li>Đảm bảo đã cài <strong>ProtocolLib</strong>. Tùy chọn cài <strong>MythicMobs</strong> để hỗ trợ
                         mob tùy chỉnh.</li>
                     <li>Khởi động lại server.</li>
@@ -962,12 +962,27 @@
                             <td data-lang="en">Add allowed player</td>
                             <td data-lang="vi">Thêm player được phép xem</td>
                         </tr>
+                        <tr>
+                            <td><code>/sm region addspawn &lt;region&gt; &lt;mob&gt; [amount] [level] [cooldown] [spread]</code></td>
+                            <td data-lang="en">Spawn private mobs when players enter the region</td>
+                            <td data-lang="vi">Spawn mob riêng khi player vào vùng</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region removespawn &lt;region&gt; &lt;mob&gt;</code></td>
+                            <td data-lang="en">Remove an enter-triggered region spawn</td>
+                            <td data-lang="vi">Xóa spawn theo vùng</td>
+                        </tr>
+                        <tr>
+                            <td><code>/sm region listspawns &lt;region&gt;</code></td>
+                            <td data-lang="en">List region enter-triggered spawns</td>
+                            <td data-lang="vi">Xem danh sách spawn theo vùng</td>
+                        </tr>
                     </tbody>
                 </table>
 
                 <h3 data-lang="en">Config Example</h3>
                 <h3 data-lang="vi">Ví dụ cấu hình</h3>
-                <pre><code><span class="hl-comment"># config.yml — regions section</span>
+                <pre><code><span class="hl-comment"># regions.yml</span>
 regions:
   vip_farm:
     world: world
@@ -978,7 +993,13 @@ regions:
     allowed-players: []
     allowed-permissions:
       - silentmob.region.vip_farm
-      - rank.vip</code></pre>
+      - rank.vip
+    spawn-mobs:
+      - mob: ZOMBIE
+        amount: 3
+        level: 1
+        cooldown: 60
+        spread: 6.0</code></pre>
             </section>
 
             <!-- ===== PERMISSION VISIBILITY ===== -->

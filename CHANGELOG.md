@@ -2,6 +2,15 @@
 
 All notable changes to SLSilentMobs will be documented in this file.
 
+## [2.2.0] - 2026-07-08
+
+### Features
+
+- Added region enter-triggered private mob spawns.
+- Added per-player cooldowns for region spawns.
+- Added `/sm region addspawn`, `/sm region removespawn`, and `/sm region listspawns`.
+- Added shared vanilla/MythicMobs spawn helper for command and region spawns.
+
 ## [2.1.2] - 2026-07-08
 
 ### Bug Fixes

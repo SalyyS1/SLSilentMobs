@@ -1,8 +1,5 @@
 package vn.saly.silentmobs.command;
 
-import io.lumine.mythic.api.adapters.AbstractLocation;
-import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -11,12 +8,13 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.config.ConfigManager;
 import vn.saly.silentmobs.model.SilentMob;
 import vn.saly.silentmobs.region.SilentRegion;
+import vn.saly.silentmobs.region.RegionSpawnEntry;
+import vn.saly.silentmobs.util.MobSpawner;
 
 import java.util.List;
 import java.util.Set;
@@ -201,26 +199,7 @@ public class SilentMobCommand implements CommandExecutor {
     }
 
     private Entity spawnMob(String mobId, Location loc, int level) {
-        // Try MythicMobs first
-        try {
-            MythicBukkit mythic = MythicBukkit.inst();
-            if (mythic != null && mythic.getMobManager().getMythicMob(mobId).isPresent()) {
-                AbstractLocation mythicLoc = new AbstractLocation(
-                        io.lumine.mythic.bukkit.BukkitAdapter.adapt(loc.getWorld()),
-                        loc.getX(), loc.getY(), loc.getZ());
-                ActiveMob activeMob = mythic.getMobManager().spawnMob(mobId, mythicLoc, level);
-                return activeMob != null ? activeMob.getEntity().getBukkitEntity() : null;
-            }
-        } catch (NoClassDefFoundError | Exception ignored) {
-        }
-
-        // Fallback: vanilla EntityType
-        try {
-            EntityType type = EntityType.valueOf(mobId.toUpperCase());
-            return loc.getWorld().spawnEntity(loc, type);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return MobSpawner.spawn(mobId, loc, level);
     }
 
     // ==========================================
@@ -391,7 +370,7 @@ public class SilentMobCommand implements CommandExecutor {
 
     // ==========================================
     // /silentmob region
-    // <create|delete|list|info|addmob|removemob|exempt|unexempt|addplayer|removeplayer|addperm|removeperm>
+    // <create|delete|list|info|addmob|removemob|exempt|unexempt|addplayer|removeplayer|addperm|removeperm|addspawn|removespawn|listspawns>
     // ==========================================
     private void handleRegion(CommandSender sender, String[] args) {
         if (!sender.hasPermission("silentmob.admin")) {
@@ -400,7 +379,7 @@ public class SilentMobCommand implements CommandExecutor {
         }
         if (args.length < 2) {
             sendMsg(sender,
-                    "&eUsage: &f/sm region <create|delete|list|info|addmob|removemob|exempt|unexempt|addplayer|removeplayer|addperm|removeperm> ...");
+                    "&eUsage: &f/sm region <create|delete|list|info|addmob|removemob|exempt|unexempt|addplayer|removeplayer|addperm|removeperm|addspawn|removespawn|listspawns> ...");
             return;
         }
 
@@ -417,6 +396,9 @@ public class SilentMobCommand implements CommandExecutor {
             case "removeplayer" -> regionModifyPlayer(sender, args, false);
             case "addperm" -> regionModifyPerm(sender, args, true);
             case "removeperm" -> regionModifyPerm(sender, args, false);
+            case "addspawn" -> regionAddSpawn(sender, args);
+            case "removespawn" -> regionRemoveSpawn(sender, args);
+            case "listspawns" -> regionListSpawns(sender, args);
             default -> sendMsg(sender, "&eUnknown region subcommand: &f" + args[1]);
         }
     }
@@ -473,6 +455,7 @@ public class SilentMobCommand implements CommandExecutor {
                     r.getX1() + "," + r.getY1() + "," + r.getZ1() + " → " +
                     r.getX2() + "," + r.getY2() + "," + r.getZ2() +
                     " &7mobs:" + r.getSilentMobs().size() +
+                    " spawns:" + r.getSpawnEntries().size() +
                     " players:" + r.getAllowedPlayers().size() +
                     " perms:" + r.getAllowedPermissions().size());
         }
@@ -496,6 +479,18 @@ public class SilentMobCommand implements CommandExecutor {
                 "&7Silent mobs: &f" + (r.getSilentMobs().isEmpty() ? "ALL" : String.join(", ", r.getSilentMobs())));
         sendMsg(sender,
                 "&7Exempt mobs: &f" + (r.getExemptMobs().isEmpty() ? "none" : String.join(", ", r.getExemptMobs())));
+        if (r.getSpawnEntries().isEmpty()) {
+            sendMsg(sender, "&7Region spawns: &fnone");
+        } else {
+            sendMsg(sender, "&7Region spawns:");
+            for (RegionSpawnEntry entry : r.getSpawnEntries()) {
+                sendMsg(sender, "&7- &e" + entry.getMobId()
+                        + " &7x&f" + entry.getAmount()
+                        + " &7level:&f" + entry.getLevel()
+                        + " &7cooldown:&f" + entry.getCooldownSeconds() + "s"
+                        + " &7spread:&f" + entry.getSpread());
+            }
+        }
 
         Set<UUID> players = r.getAllowedPlayers();
         if (players.isEmpty()) {
@@ -539,6 +534,85 @@ public class SilentMobCommand implements CommandExecutor {
                     + " silent list of &b" + r.getName());
         }
         plugin.getRegionManager().saveRegions();
+    }
+
+    private void regionAddSpawn(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sendMsg(sender, "&eUsage: &f/sm region addspawn <region> <mob> [amount] [level] [cooldown] [spread]");
+            return;
+        }
+        SilentRegion r = plugin.getRegionManager().getRegion(args[2]);
+        if (r == null) {
+            sendMsg(sender, cfgMsg("region-not-found").replace("{name}", args[2]));
+            return;
+        }
+
+        String mob = args[3];
+        int amount = parseInt(args, 4, 1);
+        int level = parseInt(args, 5, 1);
+        int cooldown = parseInt(args, 6, 60);
+        double spread = parseDouble(args, 7, 4.0);
+
+        int maxAmount = plugin.getConfigManager().getConfig().getInt("settings.max-amount", 50);
+        if (amount < 1 || amount > maxAmount) {
+            sendMsg(sender, cfgMsg("amount-invalid").replace("{max}", String.valueOf(maxAmount)));
+            return;
+        }
+        if (level < 1 || cooldown < 0 || spread < 0) {
+            sendMsg(sender, "&cInvalid spawn settings: level must be >= 1, cooldown/spread must be >= 0");
+            return;
+        }
+
+        r.addSpawnEntry(new RegionSpawnEntry(mob, amount, level, cooldown, spread));
+        plugin.getRegionManager().saveRegions();
+        sendMsg(sender, "&aAdded region spawn &e" + mob + " &7x&f" + amount
+                + " &7level:&f" + level
+                + " &7cooldown:&f" + cooldown + "s"
+                + " &7spread:&f" + spread
+                + " &ato &b" + r.getName());
+    }
+
+    private void regionRemoveSpawn(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sendMsg(sender, "&eUsage: &f/sm region removespawn <region> <mob>");
+            return;
+        }
+        SilentRegion r = plugin.getRegionManager().getRegion(args[2]);
+        if (r == null) {
+            sendMsg(sender, cfgMsg("region-not-found").replace("{name}", args[2]));
+            return;
+        }
+
+        if (r.removeSpawnEntry(args[3])) {
+            plugin.getRegionManager().saveRegions();
+            sendMsg(sender, "&cRemoved region spawn &e" + args[3] + " &cfrom &b" + r.getName());
+        } else {
+            sendMsg(sender, "&e" + args[3] + " &7is not configured as a region spawn in &b" + r.getName());
+        }
+    }
+
+    private void regionListSpawns(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sendMsg(sender, "&eUsage: &f/sm region listspawns <region>");
+            return;
+        }
+        SilentRegion r = plugin.getRegionManager().getRegion(args[2]);
+        if (r == null) {
+            sendMsg(sender, cfgMsg("region-not-found").replace("{name}", args[2]));
+            return;
+        }
+        if (r.getSpawnEntries().isEmpty()) {
+            sendMsg(sender, "&7No region spawns configured for &b" + r.getName());
+            return;
+        }
+        sendMsg(sender, "&b&lRegion Spawns &7(" + r.getName() + "):");
+        for (RegionSpawnEntry entry : r.getSpawnEntries()) {
+            sendMsg(sender, "&7- &e" + entry.getMobId()
+                    + " &7x&f" + entry.getAmount()
+                    + " &7level:&f" + entry.getLevel()
+                    + " &7cooldown:&f" + entry.getCooldownSeconds() + "s"
+                    + " &7spread:&f" + entry.getSpread());
+        }
     }
 
     private void regionModifyPlayer(CommandSender sender, String[] args, boolean add) {
@@ -614,6 +688,28 @@ public class SilentMobCommand implements CommandExecutor {
     // ==========================================
     private String cfgMsg(String key) {
         return plugin.getConfigManager().getMessage(key);
+    }
+
+    private int parseInt(String[] args, int index, int fallback) {
+        if (index >= args.length) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(args[index]);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private double parseDouble(String[] args, int index, double fallback) {
+        if (index >= args.length) {
+            return fallback;
+        }
+        try {
+            return Double.parseDouble(args[index]);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     private void sendMsg(CommandSender sender, String message) {

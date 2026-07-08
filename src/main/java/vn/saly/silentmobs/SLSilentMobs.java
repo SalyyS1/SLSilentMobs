@@ -16,6 +16,7 @@ import vn.saly.silentmobs.manager.SilentMobManager;
 import vn.saly.silentmobs.placeholder.SilentMobsPlaceholder;
 import vn.saly.silentmobs.region.RegionManager;
 import vn.saly.silentmobs.region.RegionSilentListener;
+import vn.saly.silentmobs.region.RegionSpawnListener;
 import vn.saly.silentmobs.region.WandListener;
 import vn.saly.silentmobs.region.WandManager;
 import vn.saly.silentmobs.task.MobTimeoutTask;
@@ -79,6 +80,7 @@ public class SLSilentMobs extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SilentDropListener(this), this);
         getServer().getPluginManager().registerEvents(new WandListener(this), this);
         getServer().getPluginManager().registerEvents(new RegionSilentListener(this), this);
+        getServer().getPluginManager().registerEvents(new RegionSpawnListener(this), this);
 
         // Register command
         var cmd = getCommand("silentmob");

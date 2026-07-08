@@ -59,6 +59,19 @@ public class RegionManager {
             for (String perm : r.getStringList("allowed-permissions")) {
                 region.addAllowedPermission(perm);
             }
+            // Load enter-triggered spawn entries
+            for (Map<?, ?> spawn : r.getMapList("spawn-mobs")) {
+                String mob = getString(spawn, "mob", null);
+                if (mob == null || mob.isBlank()) {
+                    continue;
+                }
+                region.addSpawnEntry(new RegionSpawnEntry(
+                        mob,
+                        getInt(spawn, "amount", 1),
+                        getInt(spawn, "level", 1),
+                        getInt(spawn, "cooldown", 60),
+                        getDouble(spawn, "spread", 4.0)));
+            }
 
             regions.put(name.toLowerCase(), region);
         }
@@ -92,6 +105,18 @@ public class RegionManager {
             config.set(path + ".allowed-players",
                     region.getAllowedPlayers().stream().map(UUID::toString).collect(Collectors.toList()));
             config.set(path + ".allowed-permissions", new ArrayList<>(region.getAllowedPermissions()));
+
+            List<Map<String, Object>> spawnEntries = new ArrayList<>();
+            for (RegionSpawnEntry entry : region.getSpawnEntries()) {
+                Map<String, Object> data = new LinkedHashMap<>();
+                data.put("mob", entry.getMobId());
+                data.put("amount", entry.getAmount());
+                data.put("level", entry.getLevel());
+                data.put("cooldown", entry.getCooldownSeconds());
+                data.put("spread", entry.getSpread());
+                spawnEntries.add(data);
+            }
+            config.set(path + ".spawn-mobs", spawnEntries);
         }
 
         plugin.getConfigManager().saveRegionsConfig();
@@ -165,5 +190,38 @@ public class RegionManager {
      */
     public int getRegionCount() {
         return regions.size();
+    }
+
+    private String getString(Map<?, ?> map, String key, String fallback) {
+        Object value = map.get(key);
+        return value != null ? value.toString() : fallback;
+    }
+
+    private int getInt(Map<?, ?> map, String key, int fallback) {
+        Object value = map.get(key);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value != null) {
+            try {
+                return Integer.parseInt(value.toString());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return fallback;
+    }
+
+    private double getDouble(Map<?, ?> map, String key, double fallback) {
+        Object value = map.get(key);
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value != null) {
+            try {
+                return Double.parseDouble(value.toString());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return fallback;
     }
 }

@@ -13,3 +13,9 @@
 #     allowed-players: []
 #     allowed-permissions:
 #       - silentmob.region.vip_farm
+#     spawn-mobs:
+#       - mob: ZOMBIE
+#         amount: 3
+#         level: 1
+#         cooldown: 60
+#         spread: 6.0

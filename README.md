@@ -2,7 +2,7 @@
 
 **Private/Silent Mobs & Instanced Loot for RPG Minecraft Servers**
 
-> Version: 2.1.2 | Author: SalyVn | API: Paper / Spigot 1.21.5 | Java: 17
+> Version: 2.2.0 | Author: SalyVn | API: Paper / Spigot 1.21.5 | Java: 17
 
 A packet-level entity visibility plugin inspired by **Wynncraft**. Mobs, item drops, and regions can be made visible only to specific players — enabling per-player quests, private farm zones, instanced loot, and more.
 
@@ -50,6 +50,7 @@ Define area-based visibility zones using an in-game wand tool.
 
 - Mobs inside a region are only visible to allowed players or permission holders
 - Per-region mob type filters and exemption lists
+- Spawn private mobs when players enter a region, with per-player cooldowns
 - Managed entirely via commands — region data persists in `regions.yml`
 
 ### Instanced Loot
@@ -84,7 +85,7 @@ Item drops from mob kills are **only visible to and collectible by the killer**.
 
 ## Installation
 
-1. Download `SLSilentMobs-2.1.2.jar` from the [Releases](https://github.com/SalyyS1/SLSilentMobs/releases) page.
+1. Download `SLSilentMobs-2.2.0.jar` from the [Releases](https://github.com/SalyyS1/SLSilentMobs/releases) page.
 2. Place the JAR into your server's `plugins/` directory.
 3. Ensure **ProtocolLib** is installed.
 4. Restart the server.
@@ -129,6 +130,9 @@ Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
 | `/sm region addmob <region> <mob>` | Add a mob type to a region's silent list |
 | `/sm region addplayer <region> <player>` | Allow a player to see mobs in a region |
 | `/sm region addperm <region> <perm>` | Allow a permission node to see mobs in a region |
+| `/sm region addspawn <region> <mob> [amount] [level] [cooldown] [spread]` | Spawn private mobs when players enter a region |
+| `/sm region removespawn <region> <mob>` | Remove an enter-triggered region spawn |
+| `/sm region listspawns <region>` | List region enter-triggered spawns |
 
 ### Examples
 
@@ -146,6 +150,9 @@ Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
 /sm global on
 /sm global whitelist add ENDER_DRAGON
 /sm global whitelist add WorldBoss_Dragon
+
+# Spawn 3 private wolves when players enter road_01, then wait 60s before spawning again
+/sm region addspawn road_01 WOLF 3 1 60 6
 ```
 
 ---
@@ -161,7 +168,7 @@ Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
 
 ## Configuration
 
-Version 2.1.2 splits configuration into four files:
+Version 2.2.0 splits configuration into four files:
 
 ```
 plugins/SLSilentMobs/
@@ -215,6 +222,8 @@ language: vi   # Switch to "en" for English
 
 **Personal Quest Mobs** — NPCs trigger `/sm spawn` to create private quest encounters per player. No interference from others.
 
+**Road Encounters** — Regions trigger private mob packs when players enter, with cooldowns to prevent spam.
+
 **Private Farm Zones** — Enable global silent mode so every player farms their own mob instances. No kill-stealing.
 
 **Dungeon Bosses** — Whitelist boss mobs so the entire party can see and fight them together.
@@ -253,6 +262,8 @@ src/main/java/vn/saly/silentmobs/
     RegionManager.java              Region CRUD & persistence
     SilentRegion.java               Region data model
     RegionSilentListener.java       Region-based visibility
+    RegionSpawnListener.java        Enter-triggered private region spawns
+    RegionSpawnEntry.java           Region spawn rule model
     WandManager.java                Selection wand tool
     WandListener.java               Wand interaction handler
   task/
@@ -261,6 +272,8 @@ src/main/java/vn/saly/silentmobs/
     EntityHider.java                ProtocolLib packet hiding
   placeholder/
     SilentMobsPlaceholder.java      PlaceholderAPI hook
+  util/
+    MobSpawner.java                 Shared vanilla/MythicMobs spawn helper
 ```
 
 ---
@@ -271,7 +284,7 @@ src/main/java/vn/saly/silentmobs/
 mvn clean package
 ```
 
-The compiled JAR is output to `target/SLSilentMobs-2.1.2.jar`.
+The compiled JAR is output to `target/SLSilentMobs-2.2.0.jar`.
 
 ---
 
