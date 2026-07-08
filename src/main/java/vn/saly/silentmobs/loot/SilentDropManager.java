@@ -23,6 +23,7 @@ public class SilentDropManager {
 
     // Item entity ID -> owner UUID (who can see/pick up this item)
     private final Map<Integer, UUID> silentItems = new ConcurrentHashMap<>();
+    private final Map<Integer, Item> silentItemEntities = new ConcurrentHashMap<>();
 
     public SilentDropManager(SLSilentMobs plugin) {
         this.plugin = plugin;
@@ -45,6 +46,7 @@ public class SilentDropManager {
 
             // Track this item as silent
             silentItems.put(itemEntity.getEntityId(), killer.getUniqueId());
+            silentItemEntities.put(itemEntity.getEntityId(), itemEntity);
 
             // Hide from all except killer
             hider.hideFromAll(itemEntity, killer);
@@ -56,8 +58,9 @@ public class SilentDropManager {
                     if (itemEntity.isValid()) {
                         hider.untrack(itemEntity);
                         itemEntity.remove();
-                        silentItems.remove(itemEntity.getEntityId());
                     }
+                    silentItems.remove(itemEntity.getEntityId());
+                    silentItemEntities.remove(itemEntity.getEntityId());
                 }, timeout * 20L);
             }
         }
@@ -87,7 +90,10 @@ public class SilentDropManager {
      */
     public void removeTracking(int entityId) {
         silentItems.remove(entityId);
-        Entity entity = plugin.getSilentMobManager().getEntityHider().getTrackedEntity(entityId);
+        Entity entity = silentItemEntities.remove(entityId);
+        if (entity == null) {
+            entity = plugin.getSilentMobManager().getEntityHider().getTrackedEntity(entityId);
+        }
         if (entity != null) {
             plugin.getSilentMobManager().getEntityHider().untrack(entity);
         }
@@ -97,6 +103,14 @@ public class SilentDropManager {
      * Clean up all tracked silent items.
      */
     public void clearAll() {
+        EntityHider hider = plugin.getSilentMobManager().getEntityHider();
+        for (Item item : silentItemEntities.values()) {
+            hider.untrack(item);
+            if (item.isValid()) {
+                item.remove();
+            }
+        }
         silentItems.clear();
+        silentItemEntities.clear();
     }
 }

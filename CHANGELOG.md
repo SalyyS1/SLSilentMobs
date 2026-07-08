@@ -2,6 +2,18 @@
 
 All notable changes to SLSilentMobs will be documented in this file.
 
+## [2.1.2] - 2026-07-08
+
+### Bug Fixes
+
+- Fixed silent mob instanced loot not applying when death cleanup ran before drop handling.
+- Fixed restricted silent regions revealing mobs to unauthorized nearest players.
+- Fixed region UUID/permission viewers not receiving visibility when joining after spawn.
+- Fixed permission viewers being able to see mobs but not damage or be targeted by them.
+- Fixed silent item drops remaining in-world after plugin disable.
+- Fixed `%slsilentmobs_player_can_see_<region>%` placeholder routing.
+- Aligned plugin version/API/Java metadata across Maven, plugin.yml, README, and configs.
+
 ## [2.1.1] - 2026-02-15
 
 ### 🐛 Bug Fixes

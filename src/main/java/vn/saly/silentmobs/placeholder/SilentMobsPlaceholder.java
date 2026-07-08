@@ -69,6 +69,16 @@ public class SilentMobsPlaceholder extends PlaceholderExpansion {
                 return String.valueOf(plugin.getSilentMobManager().getActiveCount(player.getUniqueId()));
         }
 
+        // player_can_see_<region>
+        if (identifier.startsWith("player_can_see_")) {
+            String regionName = identifier.substring(15);
+            SilentRegion region = plugin.getRegionManager().getRegion(regionName);
+            if (region != null) {
+                return region.canPlayerSee(player) ? "true" : "false";
+            }
+            return "false";
+        }
+
         // Dynamic region placeholders: region_<name>_mobs, region_<name>_players
         if (identifier.startsWith("region_")) {
             String rest = identifier.substring(7); // remove "region_"
@@ -89,16 +99,6 @@ public class SilentMobsPlaceholder extends PlaceholderExpansion {
                             return String.valueOf(region.getAllowedPermissions().size());
                     }
                 }
-            }
-
-            // player_can_see_<region>
-            if (identifier.startsWith("player_can_see_") && player != null) {
-                String regionName = identifier.substring(15);
-                SilentRegion region = plugin.getRegionManager().getRegion(regionName);
-                if (region != null) {
-                    return region.canPlayerSee(player) ? "true" : "false";
-                }
-                return "false";
             }
         }
 

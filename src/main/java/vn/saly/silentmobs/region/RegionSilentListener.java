@@ -11,6 +11,7 @@ import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.model.SilentMob;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Listens for mob spawns inside silent regions and applies region-based
@@ -19,6 +20,8 @@ import java.util.List;
  * allowed permissions or player UUIDs.
  */
 public class RegionSilentListener implements Listener {
+
+    private static final UUID REGION_SYSTEM_OWNER = new UUID(0L, 0L);
 
     private final SLSilentMobs plugin;
 
@@ -55,31 +58,29 @@ public class RegionSilentListener implements Listener {
             if (!region.isMobSilent(mobType))
                 return;
 
-            // Find a player to "own" this mob — use nearest allowed player, or just nearest
+            // Restricted regions never use unauthorized players as owners.
             Player owner = findBestOwner(entity, region);
-            if (owner == null)
+            if (owner == null && !region.hasAccessRules())
                 return;
 
             // Create silent mob with region tag
-            SilentMob silentMob = new SilentMob(
-                    owner.getUniqueId(),
-                    owner.getName(),
-                    mobType,
-                    entity,
-                    true // isGlobal (region-managed)
-            );
+            boolean hasAccessRules = region.hasAccessRules();
+            UUID ownerUuid = !hasAccessRules && owner != null ? owner.getUniqueId() : REGION_SYSTEM_OWNER;
+            String ownerName = !hasAccessRules && owner != null ? owner.getName() : "region:" + region.getName();
+            SilentMob silentMob = new SilentMob(ownerUuid, ownerName, mobType, entity, true);
             silentMob.setRegionName(region.getName());
 
-            plugin.getSilentMobManager().addSilentMob(silentMob);
-
-            // Additionally reveal to all allowed players in the region
-            for (Player online : plugin.getServer().getOnlinePlayers()) {
-                if (online.equals(owner))
-                    continue;
-                if (region.canPlayerSee(online)) {
-                    plugin.getEntityHider().addViewer(entity.getEntityId(), online.getUniqueId());
+            if (hasAccessRules) {
+                silentMob.setOwnerVisible(false);
+                for (UUID uuid : region.getAllowedPlayers()) {
+                    silentMob.addViewer(uuid);
+                }
+                for (String permission : region.getAllowedPermissions()) {
+                    silentMob.addViewPermission(permission);
                 }
             }
+
+            plugin.getSilentMobManager().addSilentMob(silentMob);
         }, 1L);
     }
 
@@ -101,20 +102,18 @@ public class RegionSilentListener implements Listener {
         double radius = 64;
         Player nearest = null;
         double minDist = Double.MAX_VALUE;
+        boolean restricted = region.hasAccessRules();
 
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (!online.getWorld().equals(entity.getWorld()))
                 continue;
+            if (restricted && !region.canPlayerSee(online))
+                continue;
+
             double dist = online.getLocation().distance(entity.getLocation());
             if (dist <= radius && dist < minDist) {
-                // Prefer allowed players
-                if (region.canPlayerSee(online)) {
-                    return online;
-                }
-                if (nearest == null || dist < minDist) {
-                    minDist = dist;
-                    nearest = online;
-                }
+                minDist = dist;
+                nearest = online;
             }
         }
         return nearest;

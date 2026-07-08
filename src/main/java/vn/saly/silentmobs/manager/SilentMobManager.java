@@ -39,16 +39,13 @@ public class SilentMobManager {
         if (mob.getEntity() != null) {
             entityIndex.put(mob.getEntityId(), mob);
 
-            if (mob.getViewPermission() != null) {
-                // Permission-based: hide from all, then reveal to players with permission
-                entityHider.hideFromAllExceptPermission(mob.getEntity(), mob.getViewPermission());
-            } else {
-                // Owner-only visibility
-                Player viewer = plugin.getServer().getPlayer(owner);
-                if (viewer != null) {
-                    entityHider.hideFromAll(mob.getEntity(), viewer);
+            Set<UUID> allowed = ConcurrentHashMap.newKeySet();
+            for (Player online : plugin.getServer().getOnlinePlayers()) {
+                if (mob.canView(online)) {
+                    allowed.add(online.getUniqueId());
                 }
             }
+            entityHider.hideFromAllExcept(mob.getEntity(), allowed);
         }
     }
 
@@ -244,7 +241,7 @@ public class SilentMobManager {
         silentMobs.computeIfAbsent(newOwner.getUniqueId(), k -> new ArrayList<>()).add(newMob);
         if (newMob.getEntity() != null) {
             entityIndex.put(newMob.getEntityId(), newMob);
-            entityHider.hideFromAll(newMob.getEntity(), newOwner);
+            entityHider.hideFromAllExcept(newMob.getEntity(), Set.of(newOwner.getUniqueId()));
         }
     }
 

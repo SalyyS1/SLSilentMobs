@@ -86,6 +86,10 @@ public class SilentRegion {
         return false;
     }
 
+    public boolean hasAccessRules() {
+        return !allowedPlayers.isEmpty() || !allowedPermissions.isEmpty();
+    }
+
     // --- Getters ---
     public String getName() {
         return name;

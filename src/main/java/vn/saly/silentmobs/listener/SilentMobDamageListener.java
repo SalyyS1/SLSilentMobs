@@ -41,8 +41,8 @@ public class SilentMobDamageListener implements Listener {
             return;
         }
 
-        // Only the owner can damage their own silent mob
-        if (!damager.getUniqueId().equals(silentMob.getOwnerUUID())) {
+        // Only players who can see the silent mob can damage it.
+        if (!silentMob.canView(damager)) {
             event.setCancelled(true);
         }
     }

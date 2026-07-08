@@ -87,15 +87,22 @@ public class EntityHider {
      * Register an entity to be visible ONLY to the specified viewer.
      */
     public void hideFromAll(Entity entity, Player viewer) {
+        hideFromAllExcept(entity, Set.of(viewer.getUniqueId()));
+    }
+
+    /**
+     * Register an entity to be visible only to the provided player UUIDs.
+     */
+    public void hideFromAllExcept(Entity entity, Collection<UUID> viewers) {
         int entityId = entity.getEntityId();
         Set<UUID> allowed = ConcurrentHashMap.newKeySet();
-        allowed.add(viewer.getUniqueId());
+        allowed.addAll(viewers);
         visibleTo.put(entityId, allowed);
         trackedEntities.put(entityId, entity);
 
-        // Send destroy packet to all online players except the viewer
+        // Send destroy packet to all online players except allowed viewers.
         for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (!online.equals(viewer) && online.canSee(entity)) {
+            if (!allowed.contains(online.getUniqueId()) && online.canSee(entity)) {
                 sendDestroyPacket(online, entityId);
             }
         }
@@ -106,7 +113,6 @@ public class EntityHider {
      * permission.
      */
     public void hideFromAllExceptPermission(Entity entity, String permission) {
-        int entityId = entity.getEntityId();
         Set<UUID> allowed = ConcurrentHashMap.newKeySet();
 
         // Add all online players who have the permission
@@ -116,15 +122,7 @@ public class EntityHider {
             }
         }
 
-        visibleTo.put(entityId, allowed);
-        trackedEntities.put(entityId, entity);
-
-        // Send destroy to non-allowed players
-        for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (!allowed.contains(online.getUniqueId()) && online.canSee(entity)) {
-                sendDestroyPacket(online, entityId);
-            }
-        }
+        hideFromAllExcept(entity, allowed);
     }
 
     /**

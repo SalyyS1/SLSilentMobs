@@ -1,7 +1,7 @@
 name: SLSilentMobs
 main: vn.saly.silentmobs.SLSilentMobs
 version: ${version}
-api-version: 1.17
+api-version: '1.21'
 author: SalyVn
 description: Private/Silent Mobs, Instanced Loot & Region System for RPG servers
 depend:

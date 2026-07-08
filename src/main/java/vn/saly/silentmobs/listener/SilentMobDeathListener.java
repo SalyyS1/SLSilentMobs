@@ -23,7 +23,7 @@ public class SilentMobDeathListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityDeath(EntityDeathEvent event) {
         Entity entity = event.getEntity();
         SilentMob silentMob = plugin.getSilentMobManager().getSilentMob(entity);

@@ -36,9 +36,11 @@ public class SilentMobTargetListener implements Listener {
         if (target == null)
             return;
 
-        // If target is NOT the owner, cancel
-        if (!target.getUniqueId().equals(silentMob.getOwnerUUID())) {
-            event.setCancelled(true);
+        if (target instanceof org.bukkit.entity.Player player && silentMob.canView(player)) {
+            return;
         }
+
+        // If target cannot see this mob, cancel.
+        event.setCancelled(true);
     }
 }

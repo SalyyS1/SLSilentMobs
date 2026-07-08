@@ -4,6 +4,9 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -20,6 +23,9 @@ public class SilentMob {
     private final boolean isGlobal;
     private String viewPermission; // null = owner-only, non-null = permission-based
     private String regionName; // null = not region-managed
+    private boolean ownerVisible = true;
+    private final Set<UUID> additionalViewers = new HashSet<>();
+    private final Set<String> additionalViewPermissions = new HashSet<>();
 
     private Entity entity;
 
@@ -91,6 +97,30 @@ public class SilentMob {
         this.viewPermission = viewPermission;
     }
 
+    public boolean isOwnerVisible() {
+        return ownerVisible;
+    }
+
+    public void setOwnerVisible(boolean ownerVisible) {
+        this.ownerVisible = ownerVisible;
+    }
+
+    public void addViewer(UUID uuid) {
+        additionalViewers.add(uuid);
+    }
+
+    public void addViewPermission(String permission) {
+        additionalViewPermissions.add(permission);
+    }
+
+    public Set<UUID> getAdditionalViewers() {
+        return Collections.unmodifiableSet(additionalViewers);
+    }
+
+    public Set<String> getAdditionalViewPermissions() {
+        return Collections.unmodifiableSet(additionalViewPermissions);
+    }
+
     public String getRegionName() {
         return regionName;
     }
@@ -104,10 +134,17 @@ public class SilentMob {
      * Returns true if player is the owner OR has the required permission.
      */
     public boolean canView(Player player) {
-        if (player.getUniqueId().equals(ownerUUID))
+        if (ownerVisible && player.getUniqueId().equals(ownerUUID))
+            return true;
+        if (additionalViewers.contains(player.getUniqueId()))
             return true;
         if (viewPermission != null && player.hasPermission(viewPermission))
             return true;
+        for (String permission : additionalViewPermissions) {
+            if (player.hasPermission(permission)) {
+                return true;
+            }
+        }
         return false;
     }
 
