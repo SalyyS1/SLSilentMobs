@@ -657,6 +657,10 @@
                         <h4>Smart Lifecycle</h4>
                         <p>Auto-despawn on timeout, player disconnect, and configurable per-player mob limits.</p>
                     </div>
+                    <div class="feature-card" data-lang="en">
+                        <h4>ModelEngine Visibility</h4>
+                        <p>Hides client-side ModelEngine models with the same per-player policy as their base mob.</p>
+                    </div>
 
                     <div class="feature-card" data-lang="vi">
                         <h4>Silent Mobs</h4>
@@ -674,6 +678,10 @@
                         <h4>Vòng đời thông minh</h4>
                         <p>Tự despawn khi hết timeout, player ngắt kết nối, và giới hạn mob mỗi player có thể cấu hình.
                         </p>
+                    </div>
+                    <div class="feature-card" data-lang="vi">
+                        <h4>Hiển thị ModelEngine</h4>
+                        <p>Ẩn model client-side của ModelEngine theo cùng quyền xem với mob gốc.</p>
                     </div>
                 </div>
             </section>
@@ -719,6 +727,12 @@
                                     class="badge badge-optional" data-lang="vi">Tùy chọn</span></td>
                         </tr>
                         <tr>
+                            <td>ModelEngine</td>
+                            <td>4.0.7 - 4.1.x</td>
+                            <td><span class="badge badge-optional" data-lang="en">Optional</span><span
+                                    class="badge badge-optional" data-lang="vi">Tùy chọn</span></td>
+                        </tr>
+                        <tr>
                             <td>PlaceholderAPI</td>
                             <td>2.11+</td>
                             <td><span class="badge badge-optional" data-lang="en">Optional</span><span
@@ -741,18 +755,18 @@
                 <h2 data-lang="en">Installation</h2>
                 <h2 data-lang="vi">Cài đặt</h2>
                 <ol data-lang="en">
-                    <li>Place <code>SLSilentMobs-2.2.0.jar</code> into your server's <code>plugins/</code> directory.
+                    <li>Place <code>SLSilentMobs-2.3.0.jar</code> into your server's <code>plugins/</code> directory.
                     </li>
                     <li>Ensure <strong>ProtocolLib</strong> is installed. Optionally install <strong>MythicMobs</strong>
-                        for custom mob support.</li>
+                        and <strong>ModelEngine 4</strong> for modeled custom mobs.</li>
                     <li>Restart the server.</li>
                     <li>Edit the generated <code>plugins/SLSilentMobs/config.yml</code> to your liking.</li>
                     <li>Run <code>/silentmob reload</code> to apply changes.</li>
                 </ol>
                 <ol data-lang="vi">
-                    <li>Đặt file <code>SLSilentMobs-2.2.0.jar</code> vào thư mục <code>plugins/</code> của server.</li>
-                    <li>Đảm bảo đã cài <strong>ProtocolLib</strong>. Tùy chọn cài <strong>MythicMobs</strong> để hỗ trợ
-                        mob tùy chỉnh.</li>
+                    <li>Đặt file <code>SLSilentMobs-2.3.0.jar</code> vào thư mục <code>plugins/</code> của server.</li>
+                    <li>Đảm bảo đã cài <strong>ProtocolLib</strong>. Tùy chọn cài <strong>MythicMobs</strong> và
+                        <strong>ModelEngine 4</strong> để hỗ trợ mob có model.</li>
                     <li>Khởi động lại server.</li>
                     <li>Chỉnh sửa file <code>plugins/SLSilentMobs/config.yml</code> được tạo tự động.</li>
                     <li>Chạy <code>/silentmob reload</code> để áp dụng thay đổi.</li>
@@ -782,6 +796,7 @@
                     <li>Automatically despawns after the configured timeout expires.</li>
                     <li>Players who join mid-session will <strong>not</strong> see existing silent mobs belonging to
                         others.</li>
+                    <li>ModelEngine models are hidden and revealed together with their base mob.</li>
                     <li>Per-player mob limit prevents resource abuse.</li>
                 </ul>
                 <ul data-lang="vi">
@@ -790,6 +805,7 @@
                     <li>Tự động despawn khi chủ sở hữu ngắt kết nối (có thể cấu hình).</li>
                     <li>Tự động despawn khi hết thời gian timeout đã cấu hình.</li>
                     <li>Player join giữa chừng sẽ <strong>không</strong> thấy silent mob của người khác.</li>
+                    <li>ModelEngine được ẩn và hiện đồng bộ cùng mob gốc.</li>
                     <li>Giới hạn mob mỗi player để ngăn lạm dụng tài nguyên.</li>
                 </ul>
 
@@ -1253,6 +1269,11 @@ regions:
   <span class="hl-key">death-notification</span>: <span class="hl-val">true</span>  <span class="hl-comment"># notify owner on mob death</span>
   <span class="hl-key">max-mobs-per-player</span>: <span class="hl-val">10</span>   <span class="hl-comment"># per-player mob cap</span></code></pre>
 
+                <h3 data-lang="en">Integrations</h3>
+                <h3 data-lang="vi">Tích hợp</h3>
+                <pre><code><span class="hl-key">integrations</span>:
+  <span class="hl-key">model-engine</span>: <span class="hl-val">true</span>  <span class="hl-comment"># auto-detect ModelEngine and sync model visibility</span></code></pre>
+
                 <h3 data-lang="en">Global Silent Mode</h3>
                 <h3 data-lang="vi">Chế độ Global Silent</h3>
                 <pre><code><span class="hl-key">global-silent</span>:
@@ -1381,6 +1402,19 @@ regions:
                     EntityHider hoạt động theo chính sách <strong>WHITELIST</strong>: entity bị ẩn với tất cả
                     mọi người theo mặc định, và chỉ được hiển thị cho viewer được chỉ định.
                 </div>
+
+                <h3 data-lang="en">ModelEngine Client-Side Models</h3>
+                <h3 data-lang="vi">Model client-side của ModelEngine</h3>
+                <p data-lang="en">
+                    When ModelEngine 4 is installed, SLSilentMobs also updates its per-player pairing state.
+                    This hides every display entity used by the model, including models attached after the base mob
+                    has already spawned. ModelEngine remains optional and is detected automatically.
+                </p>
+                <p data-lang="vi">
+                    Khi có ModelEngine 4, SLSilentMobs đồng bộ thêm trạng thái pairing theo từng player.
+                    Toàn bộ display entity của model đều bị ẩn, kể cả model được gắn sau khi mob gốc đã spawn.
+                    ModelEngine vẫn là phụ thuộc tùy chọn và được tự động nhận diện.
+                </p>
             </section>
 
             <!-- ===== SOURCE STRUCTURE ===== -->
@@ -1572,6 +1606,16 @@ regions:
                                     <div class="tree-item-row"><span class="tree-icon">📄</span><span
                                             class="tree-name">EntityHider.java</span><span class="tree-desc">ProtocolLib
                                             packet hiding</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">ModelEngineVisibilityBridge.java</span><span
+                                            class="tree-desc">Optional per-viewer model pairing</span></div>
+                                </li>
+                                <li class="tree-item">
+                                    <div class="tree-item-row"><span class="tree-icon">📄</span><span
+                                            class="tree-name">ModelEngineViewerMethods.java</span><span
+                                            class="tree-desc">ModelEngine 4.0/4.1 compatibility</span></div>
                                 </li>
                             </ul>
                         </li>

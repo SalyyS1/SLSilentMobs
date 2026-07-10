@@ -2,6 +2,25 @@
 
 All notable changes to SLSilentMobs will be documented in this file.
 
+## [2.3.0] - 2026-07-10
+
+### Features
+
+- Added optional ModelEngine 4 client-side model visibility integration.
+- Added runtime compatibility for ModelEngine 4.0 `Player` and 4.1 `UUID` viewer APIs.
+- Added late-model synchronization through ModelEngine's `AddModelEvent`.
+- Added focused JUnit regression tests for ModelEngine compatibility and region rules.
+
+### Improvements
+
+- Added diff-based viewer updates with immediate entity respawn for newly authorized players.
+- Refresh region and permission viewers for already spawned mobs.
+- Preserve visibility metadata and age when global mobs change owner.
+- Reassign orphaned global mobs during maintenance when a player becomes available.
+- Centralized entity untracking and cleanup paths.
+- Prune region spawn cooldown state when players disconnect.
+- Made mob and region key normalization locale-independent.
+
 ## [2.2.0] - 2026-07-08
 
 ### Features

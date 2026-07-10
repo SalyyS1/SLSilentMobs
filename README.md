@@ -2,7 +2,7 @@
 
 **Private/Silent Mobs & Instanced Loot for RPG Minecraft Servers**
 
-> Version: 2.2.0 | Author: SalyVn | API: Paper / Spigot 1.21.5 | Java: 17
+> Version: 2.3.0 | Author: SalyVn | API: Paper / Spigot 1.21.5 | Java: 17
 
 A packet-level entity visibility plugin inspired by **Wynncraft**. Mobs, item drops, and regions can be made visible only to specific players — enabling per-player quests, private farm zones, instanced loot, and more.
 
@@ -32,6 +32,7 @@ A packet-level entity visibility plugin inspired by **Wynncraft**. Mobs, item dr
 Spawn mobs that are **only visible to a designated player**. All other players on the server cannot see or interact with the entity.
 
 - Supports both **Vanilla** and **MythicMobs** entity types
+- Hides **ModelEngine 4** client-side models together with their base entity
 - Mobs only target their assigned owner
 - Permission-based visibility — share mobs with players who have a specific permission node
 - Automatic despawn on owner disconnect, timeout expiry, or plugin disable
@@ -79,15 +80,16 @@ Item drops from mob kills are **only visible to and collectible by the killer**.
 | Paper / Spigot | 1.21.5+ | Yes |
 | ProtocolLib | 5.4.0+ | Yes |
 | MythicMobs | 5.x | No (enables custom mob support) |
+| ModelEngine | 4.0.7 - 4.1.x | No (enables per-player model visibility) |
 | PlaceholderAPI | 2.11+ | No (enables placeholders) |
 
 ---
 
 ## Installation
 
-1. Download `SLSilentMobs-2.2.0.jar` from the [Releases](https://github.com/SalyyS1/SLSilentMobs/releases) page.
+1. Download `SLSilentMobs-2.3.0.jar` from the [Releases](https://github.com/SalyyS1/SLSilentMobs/releases) page.
 2. Place the JAR into your server's `plugins/` directory.
-3. Ensure **ProtocolLib** is installed.
+3. Ensure **ProtocolLib** is installed. Install **ModelEngine 4** only when using modeled mobs.
 4. Restart the server.
 5. Configuration files are generated automatically in `plugins/SLSilentMobs/`.
 
@@ -168,7 +170,7 @@ Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
 
 ## Configuration
 
-Version 2.2.0 splits configuration into four files:
+Version 2.3.0 splits configuration into four files:
 
 ```
 plugins/SLSilentMobs/
@@ -191,6 +193,9 @@ settings:
   mob-target-owner-only: true
   death-notification: true
   max-mobs-per-player: 10
+
+integrations:
+  model-engine: true            # auto-detect and hide client-side models
 
 global-silent:
   enabled: false
@@ -270,6 +275,8 @@ src/main/java/vn/saly/silentmobs/
     MobTimeoutTask.java             Scheduled cleanup
   visibility/
     EntityHider.java                ProtocolLib packet hiding
+    ModelEngineVisibilityBridge.java Optional ModelEngine per-viewer pairing
+    ModelEngineViewerMethods.java   ModelEngine 4.0/4.1 compatibility resolver
   placeholder/
     SilentMobsPlaceholder.java      PlaceholderAPI hook
   util/
@@ -284,7 +291,7 @@ src/main/java/vn/saly/silentmobs/
 mvn clean package
 ```
 
-The compiled JAR is output to `target/SLSilentMobs-2.2.0.jar`.
+The compiled JAR is output to `target/SLSilentMobs-2.3.0.jar`.
 
 ---
 
