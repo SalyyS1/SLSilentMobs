@@ -65,7 +65,7 @@ public class SilentRegion {
      * Check if a mob type should be silent in this region.
      */
     public boolean isMobSilent(String mobType) {
-        String upper = mobType.toUpperCase();
+        String upper = mobType.toUpperCase(Locale.ROOT);
         if (exemptMobs.contains(upper))
             return false;
         // If silentMobs is empty, ALL mobs in region are silent
@@ -127,11 +127,11 @@ public class SilentRegion {
 
     // --- Silent Mobs ---
     public void addSilentMob(String mob) {
-        silentMobs.add(mob.toUpperCase());
+        silentMobs.add(mob.toUpperCase(Locale.ROOT));
     }
 
     public void removeSilentMob(String mob) {
-        silentMobs.remove(mob.toUpperCase());
+        silentMobs.remove(mob.toUpperCase(Locale.ROOT));
     }
 
     public Set<String> getSilentMobs() {
@@ -140,11 +140,11 @@ public class SilentRegion {
 
     // --- Exempt Mobs ---
     public void addExemptMob(String mob) {
-        exemptMobs.add(mob.toUpperCase());
+        exemptMobs.add(mob.toUpperCase(Locale.ROOT));
     }
 
     public void removeExemptMob(String mob) {
-        exemptMobs.remove(mob.toUpperCase());
+        exemptMobs.remove(mob.toUpperCase(Locale.ROOT));
     }
 
     public Set<String> getExemptMobs() {
@@ -179,6 +179,7 @@ public class SilentRegion {
 
     // --- Region Spawn Entries ---
     public void addSpawnEntry(RegionSpawnEntry entry) {
+        removeSpawnEntry(entry.getMobId());
         spawnEntries.add(entry);
     }
 

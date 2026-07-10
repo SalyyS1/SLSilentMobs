@@ -38,6 +38,7 @@ public class PlayerConnectionListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
+        plugin.getEntityHider().releasePlayer(player);
 
         if (plugin.getConfigManager().getConfig().getBoolean("settings.despawn-on-quit", true)) {
             // Check if global silent mode wants reassignment

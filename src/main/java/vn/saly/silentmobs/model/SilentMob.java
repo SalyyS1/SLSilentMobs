@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,8 +15,8 @@ import java.util.UUID;
  */
 public class SilentMob {
 
-    private final UUID ownerUUID;
-    private final String ownerName;
+    private UUID ownerUUID;
+    private String ownerName;
     private final String mobId;
     private final Location spawnLocation;
     private final long spawnTime;
@@ -23,6 +24,7 @@ public class SilentMob {
     private final boolean isGlobal;
     private String viewPermission; // null = owner-only, non-null = permission-based
     private String regionName; // null = not region-managed
+    private boolean regionAccessManaged;
     private boolean ownerVisible = true;
     private final Set<UUID> additionalViewers = new HashSet<>();
     private final Set<String> additionalViewPermissions = new HashSet<>();
@@ -59,6 +61,14 @@ public class SilentMob {
 
     public String getOwnerName() {
         return ownerName;
+    }
+
+    /**
+     * Reassign ownership without losing visibility, region, level, or age data.
+     */
+    public void reassignOwner(Player newOwner) {
+        this.ownerUUID = newOwner.getUniqueId();
+        this.ownerName = newOwner.getName();
     }
 
     public String getMobId() {
@@ -113,6 +123,16 @@ public class SilentMob {
         additionalViewPermissions.add(permission);
     }
 
+    public void replaceAdditionalViewers(Collection<UUID> viewers) {
+        additionalViewers.clear();
+        additionalViewers.addAll(viewers);
+    }
+
+    public void replaceAdditionalViewPermissions(Collection<String> permissions) {
+        additionalViewPermissions.clear();
+        additionalViewPermissions.addAll(permissions);
+    }
+
     public Set<UUID> getAdditionalViewers() {
         return Collections.unmodifiableSet(additionalViewers);
     }
@@ -127,6 +147,14 @@ public class SilentMob {
 
     public void setRegionName(String regionName) {
         this.regionName = regionName;
+    }
+
+    public boolean isRegionAccessManaged() {
+        return regionAccessManaged;
+    }
+
+    public void setRegionAccessManaged(boolean regionAccessManaged) {
+        this.regionAccessManaged = regionAccessManaged;
     }
 
     /**

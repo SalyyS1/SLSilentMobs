@@ -6,7 +6,9 @@ import org.bukkit.entity.EntityType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Configuration for Global Silent mode whitelist.
@@ -14,7 +16,7 @@ import java.util.Set;
 public class GlobalSilentConfig {
 
     private final Set<String> vanillaWhitelist = new HashSet<>();
-    private final Set<String> mythicWhitelist = new HashSet<>();
+    private final Set<String> mythicWhitelist = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
     public void load(FileConfiguration config) {
         vanillaWhitelist.clear();
@@ -22,7 +24,7 @@ public class GlobalSilentConfig {
 
         List<String> vanilla = config.getStringList("global-silent.whitelist.vanilla");
         for (String s : vanilla) {
-            vanillaWhitelist.add(s.toUpperCase());
+            vanillaWhitelist.add(s.toUpperCase(Locale.ROOT));
         }
 
         List<String> mythic = config.getStringList("global-silent.whitelist.mythicmobs");
@@ -49,7 +51,7 @@ public class GlobalSilentConfig {
      * Check by string (either vanilla or mythic).
      */
     public boolean isWhitelisted(String mobId) {
-        return vanillaWhitelist.contains(mobId.toUpperCase()) || mythicWhitelist.contains(mobId);
+        return vanillaWhitelist.contains(mobId.toUpperCase(Locale.ROOT)) || mythicWhitelist.contains(mobId);
     }
 
     /**
@@ -58,8 +60,8 @@ public class GlobalSilentConfig {
     public boolean addToWhitelist(String mobId) {
         // Try as vanilla first
         try {
-            EntityType.valueOf(mobId.toUpperCase());
-            return vanillaWhitelist.add(mobId.toUpperCase());
+            EntityType.valueOf(mobId.toUpperCase(Locale.ROOT));
+            return vanillaWhitelist.add(mobId.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             // Treat as MythicMob
             return mythicWhitelist.add(mobId);
@@ -70,7 +72,7 @@ public class GlobalSilentConfig {
      * Remove from whitelist. Returns false if not found.
      */
     public boolean removeFromWhitelist(String mobId) {
-        boolean removed = vanillaWhitelist.remove(mobId.toUpperCase());
+        boolean removed = vanillaWhitelist.remove(mobId.toUpperCase(Locale.ROOT));
         if (!removed) {
             removed = mythicWhitelist.remove(mobId);
         }

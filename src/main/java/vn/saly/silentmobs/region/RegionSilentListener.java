@@ -10,6 +10,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.model.SilentMob;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,10 +44,16 @@ public class RegionSilentListener implements Listener {
         // Use first matching region
         SilentRegion region = regions.get(0);
 
+        // Hide provisionally while MythicMobs assigns its internal ID and
+        // ModelEngine attaches the client-side model.
+        plugin.getEntityHider().hideFromAllExcept(entity, Collections.emptySet());
+
         // Check on next tick (for MythicMobs compatibility)
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!entity.isValid())
+            if (!entity.isValid()) {
+                plugin.getEntityHider().untrack(entity, false);
                 return;
+            }
 
             // Already tracked by manual or global system? Skip
             if (plugin.getSilentMobManager().isSilentMob(entity))
@@ -55,20 +62,25 @@ public class RegionSilentListener implements Listener {
             String mobType = getMobType(entity);
 
             // Check if this mob should be silent in this region
-            if (!region.isMobSilent(mobType))
+            if (!region.isMobSilent(mobType)) {
+                plugin.getEntityHider().untrack(entity, true);
                 return;
+            }
 
             // Restricted regions never use unauthorized players as owners.
             Player owner = findBestOwner(entity, region);
-            if (owner == null && !region.hasAccessRules())
+            if (owner == null && !region.hasAccessRules()) {
+                plugin.getEntityHider().untrack(entity, true);
                 return;
+            }
 
             // Create silent mob with region tag
             boolean hasAccessRules = region.hasAccessRules();
             UUID ownerUuid = !hasAccessRules && owner != null ? owner.getUniqueId() : REGION_SYSTEM_OWNER;
             String ownerName = !hasAccessRules && owner != null ? owner.getName() : "region:" + region.getName();
-            SilentMob silentMob = new SilentMob(ownerUuid, ownerName, mobType, entity, true);
+            SilentMob silentMob = new SilentMob(ownerUuid, ownerName, mobType, entity, false);
             silentMob.setRegionName(region.getName());
+            silentMob.setRegionAccessManaged(true);
 
             if (hasAccessRules) {
                 silentMob.setOwnerVisible(false);

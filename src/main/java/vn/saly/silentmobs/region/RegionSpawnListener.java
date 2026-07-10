@@ -8,11 +8,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.model.SilentMob;
 import vn.saly.silentmobs.util.MobSpawner;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class RegionSpawnListener implements Listener {
 
     private final SLSilentMobs plugin;
-    private final Map<String, Long> nextSpawnAt = new ConcurrentHashMap<>();
+    private final Map<CooldownKey, Long> nextSpawnAt = new ConcurrentHashMap<>();
 
     public RegionSpawnListener(SLSilentMobs plugin) {
         this.plugin = plugin;
@@ -55,7 +55,16 @@ public class RegionSpawnListener implements Listener {
         }, 5L);
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        nextSpawnAt.keySet().removeIf(key -> key.playerId().equals(playerId));
+    }
+
     private void triggerRegion(Player player, SilentRegion region) {
+        long now = System.currentTimeMillis();
+        nextSpawnAt.entrySet().removeIf(entry -> entry.getValue() <= now);
+
         if (region.getSpawnEntries().isEmpty()) {
             return;
         }
@@ -128,9 +137,8 @@ public class RegionSpawnListener implements Listener {
                 System.currentTimeMillis() + entry.getCooldownSeconds() * 1000L);
     }
 
-    private String cooldownKey(UUID playerUuid, SilentRegion region, RegionSpawnEntry entry) {
-        return playerUuid + ":" + region.getName().toLowerCase(Locale.ROOT) + ":"
-                + entry.getMobId().toLowerCase(Locale.ROOT);
+    private CooldownKey cooldownKey(UUID playerUuid, SilentRegion region, RegionSpawnEntry entry) {
+        return new CooldownKey(playerUuid, region.getName(), entry.getMobId());
     }
 
     private boolean isSameBlock(Location a, Location b) {
@@ -140,5 +148,12 @@ public class RegionSpawnListener implements Listener {
         return a.getBlockX() == b.getBlockX()
                 && a.getBlockY() == b.getBlockY()
                 && a.getBlockZ() == b.getBlockZ();
+    }
+
+    private record CooldownKey(UUID playerId, String regionName, String mobId) {
+        private CooldownKey {
+            regionName = regionName.toLowerCase(java.util.Locale.ROOT);
+            mobId = mobId.toLowerCase(java.util.Locale.ROOT);
+        }
     }
 }

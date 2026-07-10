@@ -8,7 +8,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import vn.saly.silentmobs.SLSilentMobs;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,8 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EntityHider {
 
-    private final Plugin plugin;
+    private final SLSilentMobs plugin;
     private final ProtocolManager protocolManager;
+    private ModelVisibilityBridge modelBridge;
 
     // entityId -> set of player UUIDs who CAN see this entity
     private final Map<Integer, Set<UUID>> visibleTo = new ConcurrentHashMap<>();
@@ -44,9 +45,10 @@ public class EntityHider {
             PacketType.Play.Server.ENTITY_STATUS
     };
 
-    public EntityHider(Plugin plugin) {
+    public EntityHider(SLSilentMobs plugin) {
         this.plugin = plugin;
         this.protocolManager = ProtocolLibrary.getProtocolManager();
+        this.modelBridge = ModelEngineVisibilityBridge.create(plugin, this::syncModelVisibility);
         registerPacketListener();
     }
 
@@ -58,11 +60,24 @@ public class EntityHider {
                     return;
 
                 PacketContainer packet = event.getPacket();
+                if (packet.getIntegers().size() == 0)
+                    return;
                 int entityId = packet.getIntegers().read(0);
 
                 // Only intercept tracked entities
                 if (!visibleTo.containsKey(entityId))
                     return;
+
+                Entity tracked = trackedEntities.get(entityId);
+                if (event.getPacketType().equals(PacketType.Play.Server.SPAWN_ENTITY)
+                        && tracked != null
+                        && packet.getUUIDs().size() > 0
+                        && !tracked.getUniqueId().equals(packet.getUUIDs().read(0))) {
+                    visibleTo.remove(entityId);
+                    trackedEntities.remove(entityId, tracked);
+                    plugin.getServer().getScheduler().runTask(plugin, () -> releaseModelState(tracked));
+                    return;
+                }
 
                 Player receiver = event.getPlayer();
                 Set<UUID> allowed = visibleTo.get(entityId);
@@ -71,14 +86,6 @@ public class EntityHider {
                 if (allowed != null && !allowed.contains(receiver.getUniqueId())) {
                     event.setCancelled(true);
                 }
-            }
-        });
-
-        // Also intercept DESTROY packets to avoid issues
-        protocolManager.addPacketListener(new PacketAdapter(plugin, PacketType.Play.Server.ENTITY_DESTROY) {
-            @Override
-            public void onPacketSending(PacketEvent event) {
-                // Let destroy packets through - they should reach everyone
             }
         });
     }
@@ -91,19 +98,50 @@ public class EntityHider {
     }
 
     /**
-     * Register an entity to be visible only to the provided player UUIDs.
+     * Register an entity or replace its allowed viewer set.
      */
     public void hideFromAllExcept(Entity entity, Collection<UUID> viewers) {
+        setViewers(entity, viewers);
+    }
+
+    /**
+     * Atomically replace the viewers of a tracked entity and apply only the
+     * visibility changes.
+     */
+    public void setViewers(Entity entity, Collection<UUID> viewers) {
+        Objects.requireNonNull(entity, "entity");
+        Objects.requireNonNull(viewers, "viewers");
+
         int entityId = entity.getEntityId();
         Set<UUID> allowed = ConcurrentHashMap.newKeySet();
         allowed.addAll(viewers);
-        visibleTo.put(entityId, allowed);
-        trackedEntities.put(entityId, entity);
+        Set<UUID> previous = visibleTo.put(entityId, allowed);
+        Entity previousEntity = trackedEntities.put(entityId, entity);
 
-        // Send destroy packet to all online players except allowed viewers.
+        if (previousEntity != null && !previousEntity.getUniqueId().equals(entity.getUniqueId())) {
+            releaseModelState(previousEntity);
+            previous = null;
+        }
+
         for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (!allowed.contains(online.getUniqueId()) && online.canSee(entity)) {
-                sendDestroyPacket(online, entityId);
+            boolean canSeeNow = allowed.contains(online.getUniqueId());
+            if (previous == null) {
+                if (canSeeNow) {
+                    modelBridge.release(entity, online);
+                } else {
+                    hideEntity(entity, online);
+                }
+                continue;
+            }
+
+            boolean couldSeeBefore = previous.contains(online.getUniqueId());
+            if (couldSeeBefore == canSeeNow) {
+                continue;
+            }
+            if (canSeeNow) {
+                showEntity(entity, online);
+            } else {
+                hideEntity(entity, online);
             }
         }
     }
@@ -113,7 +151,7 @@ public class EntityHider {
      * permission.
      */
     public void hideFromAllExceptPermission(Entity entity, String permission) {
-        Set<UUID> allowed = ConcurrentHashMap.newKeySet();
+        Set<UUID> allowed = new HashSet<>();
 
         // Add all online players who have the permission
         for (Player online : plugin.getServer().getOnlinePlayers()) {
@@ -133,6 +171,12 @@ public class EntityHider {
         if (allowed == null)
             return;
         allowed.add(playerUUID);
+
+        Player player = plugin.getServer().getPlayer(playerUUID);
+        Entity entity = trackedEntities.get(entityId);
+        if (player != null && entity != null) {
+            showEntity(entity, player);
+        }
     }
 
     /**
@@ -143,10 +187,11 @@ public class EntityHider {
         if (allowed == null)
             return;
         allowed.remove(playerUUID);
-        // Send destroy to the removed viewer
+
         Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            sendDestroyPacket(player, entityId);
+        Entity entity = trackedEntities.get(entityId);
+        if (player != null && entity != null) {
+            hideEntity(entity, player);
         }
     }
 
@@ -160,8 +205,10 @@ public class EntityHider {
             return;
 
         Set<UUID> allowed = visibleTo.get(entityId);
-        if (allowed != null && !allowed.contains(player.getUniqueId())) {
-            sendDestroyPacket(player, entityId);
+        if (allowed != null && allowed.contains(player.getUniqueId())) {
+            showEntity(entity, player);
+        } else {
+            hideEntity(entity, player);
         }
     }
 
@@ -169,9 +216,28 @@ public class EntityHider {
      * Stop tracking an entity — makes it visible to everyone again.
      */
     public void untrack(Entity entity) {
+        untrack(entity, true);
+    }
+
+    /**
+     * Stop tracking an entity. Restore visibility only when the entity will stay
+     * alive after this operation.
+     */
+    public void untrack(Entity entity, boolean restoreVisibility) {
         int entityId = entity.getEntityId();
-        visibleTo.remove(entityId);
-        trackedEntities.remove(entityId);
+        Set<UUID> allowed = visibleTo.remove(entityId);
+        Entity tracked = trackedEntities.remove(entityId);
+        if (allowed == null)
+            return;
+
+        Entity target = tracked != null ? tracked : entity;
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (restoreVisibility && !allowed.contains(online.getUniqueId())) {
+                showEntity(target, online);
+            } else {
+                modelBridge.release(target, online);
+            }
+        }
     }
 
     /**
@@ -193,14 +259,15 @@ public class EntityHider {
      * Get the set of viewer UUIDs for a tracked entity.
      */
     public Set<UUID> getViewers(int entityId) {
-        return visibleTo.getOrDefault(entityId, Collections.emptySet());
+        Set<UUID> viewers = visibleTo.get(entityId);
+        return viewers == null ? Collections.emptySet() : Set.copyOf(viewers);
     }
 
     /**
      * Get all tracked entity IDs.
      */
     public Set<Integer> getTrackedEntityIds() {
-        return Collections.unmodifiableSet(visibleTo.keySet());
+        return Set.copyOf(visibleTo.keySet());
     }
 
     /**
@@ -214,8 +281,88 @@ public class EntityHider {
      * Clear all tracked entities.
      */
     public void clearAll() {
+        for (Entity entity : List.copyOf(trackedEntities.values())) {
+            untrack(entity, false);
+        }
         visibleTo.clear();
         trackedEntities.clear();
+    }
+
+    public boolean isModelEngineAvailable() {
+        return modelBridge.isAvailable();
+    }
+
+    public String getModelEngineVersion() {
+        return modelBridge.getVersion();
+    }
+
+    public void reloadIntegrations() {
+        ModelVisibilityBridge previous = modelBridge;
+        for (Entity entity : List.copyOf(trackedEntities.values())) {
+            for (Player online : plugin.getServer().getOnlinePlayers()) {
+                previous.release(entity, online);
+            }
+        }
+        previous.close();
+
+        modelBridge = ModelEngineVisibilityBridge.create(plugin, this::syncModelVisibility);
+        for (Entity entity : List.copyOf(trackedEntities.values())) {
+            syncModelVisibility(entity);
+        }
+    }
+
+    /**
+     * Drop per-viewer state when a player disconnects to avoid stale ModelEngine
+     * pairing references.
+     */
+    public void releasePlayer(Player player) {
+        UUID playerId = player.getUniqueId();
+        for (Map.Entry<Integer, Entity> entry : trackedEntities.entrySet()) {
+            Set<UUID> allowed = visibleTo.get(entry.getKey());
+            if (allowed != null) {
+                allowed.remove(playerId);
+            }
+            modelBridge.release(entry.getValue(), player);
+        }
+    }
+
+    private void syncModelVisibility(Entity entity) {
+        Set<UUID> allowed = visibleTo.get(entity.getEntityId());
+        Entity tracked = trackedEntities.get(entity.getEntityId());
+        if (allowed == null || tracked == null || !tracked.getUniqueId().equals(entity.getUniqueId())) {
+            return;
+        }
+
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (allowed.contains(online.getUniqueId())) {
+                modelBridge.show(entity, online);
+            } else {
+                modelBridge.hide(entity, online);
+            }
+        }
+    }
+
+    private void hideEntity(Entity entity, Player player) {
+        sendDestroyPacket(player, entity.getEntityId());
+        modelBridge.hide(entity, player);
+    }
+
+    private void showEntity(Entity entity, Player player) {
+        try {
+            if (entity.isValid() && player.isOnline()) {
+                protocolManager.updateEntity(entity, List.of(player));
+            }
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Failed to refresh entity for " + player.getName() + ": "
+                    + exception.getMessage());
+        }
+        modelBridge.show(entity, player);
+    }
+
+    private void releaseModelState(Entity entity) {
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            modelBridge.release(entity, online);
+        }
     }
 
     private void sendDestroyPacket(Player player, int entityId) {
@@ -229,7 +376,8 @@ public class EntityHider {
     }
 
     public void close() {
-        protocolManager.removePacketListeners(plugin);
         clearAll();
+        modelBridge.close();
+        protocolManager.removePacketListeners(plugin);
     }
 }

@@ -2,8 +2,9 @@ package vn.saly.silentmobs.manager;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.model.SilentMob;
+import vn.saly.silentmobs.region.SilentRegion;
 import vn.saly.silentmobs.visibility.EntityHider;
 
 import java.util.*;
@@ -15,7 +16,9 @@ import java.util.stream.Collectors;
  */
 public class SilentMobManager {
 
-    private final Plugin plugin;
+    private static final UUID REGION_SYSTEM_OWNER = new UUID(0L, 0L);
+
+    private final SLSilentMobs plugin;
     private final EntityHider entityHider;
 
     // ownerUUID -> list of silent mobs
@@ -24,7 +27,7 @@ public class SilentMobManager {
     // entityId -> SilentMob (reverse lookup)
     private final Map<Integer, SilentMob> entityIndex = new ConcurrentHashMap<>();
 
-    public SilentMobManager(Plugin plugin, EntityHider entityHider) {
+    public SilentMobManager(SLSilentMobs plugin, EntityHider entityHider) {
         this.plugin = plugin;
         this.entityHider = entityHider;
     }
@@ -33,20 +36,26 @@ public class SilentMobManager {
      * Register a new silent mob after spawning.
      */
     public void addSilentMob(SilentMob mob) {
+        Entity entity = mob.getEntity();
+        if (entity == null || !entity.isValid()) {
+            plugin.getLogger().warning("Ignored silent mob registration without a valid entity: " + mob.getMobId());
+            return;
+        }
+
+        SilentMob existing = entityIndex.get(entity.getEntityId());
+        if (existing != null) {
+            if (existing.getEntity() != null
+                    && existing.getEntity().getUniqueId().equals(entity.getUniqueId())) {
+                return;
+            }
+            detachEntity(existing, false);
+            removeFromOwnerList(existing);
+        }
+
         UUID owner = mob.getOwnerUUID();
         silentMobs.computeIfAbsent(owner, k -> new ArrayList<>()).add(mob);
-
-        if (mob.getEntity() != null) {
-            entityIndex.put(mob.getEntityId(), mob);
-
-            Set<UUID> allowed = ConcurrentHashMap.newKeySet();
-            for (Player online : plugin.getServer().getOnlinePlayers()) {
-                if (mob.canView(online)) {
-                    allowed.add(online.getUniqueId());
-                }
-            }
-            entityHider.hideFromAllExcept(mob.getEntity(), allowed);
-        }
+        entityIndex.put(mob.getEntityId(), mob);
+        refreshVisibility(mob);
     }
 
     /**
@@ -60,14 +69,19 @@ public class SilentMobManager {
      * Get a silent mob by entity reference.
      */
     public SilentMob getSilentMob(Entity entity) {
-        return entityIndex.get(entity.getEntityId());
+        SilentMob mob = entityIndex.get(entity.getEntityId());
+        if (mob == null || mob.getEntity() == null
+                || !mob.getEntity().getUniqueId().equals(entity.getUniqueId())) {
+            return null;
+        }
+        return mob;
     }
 
     /**
      * Check if an entity is a tracked silent mob.
      */
     public boolean isSilentMob(Entity entity) {
-        return entityIndex.containsKey(entity.getEntityId());
+        return getSilentMob(entity) != null;
     }
 
     /**
@@ -98,19 +112,8 @@ public class SilentMobManager {
      * Remove a specific silent mob.
      */
     public void removeSilentMob(SilentMob mob) {
-        if (mob.getEntity() != null) {
-            entityHider.untrack(mob.getEntity());
-            entityIndex.remove(mob.getEntityId());
-        }
-        mob.despawn();
-
-        List<SilentMob> list = silentMobs.get(mob.getOwnerUUID());
-        if (list != null) {
-            list.remove(mob);
-            if (list.isEmpty()) {
-                silentMobs.remove(mob.getOwnerUUID());
-            }
-        }
+        detachEntity(mob, true);
+        removeFromOwnerList(mob);
     }
 
     /**
@@ -123,11 +126,7 @@ public class SilentMobManager {
 
         int count = 0;
         for (SilentMob mob : list) {
-            if (mob.getEntity() != null) {
-                entityHider.untrack(mob.getEntity());
-                entityIndex.remove(mob.getEntityId());
-            }
-            mob.despawn();
+            detachEntity(mob, true);
             count++;
         }
         return count;
@@ -146,11 +145,7 @@ public class SilentMobManager {
         while (it.hasNext()) {
             SilentMob mob = it.next();
             if (mob.getMobId().equalsIgnoreCase(mobId)) {
-                if (mob.getEntity() != null) {
-                    entityHider.untrack(mob.getEntity());
-                    entityIndex.remove(mob.getEntityId());
-                }
-                mob.despawn();
+                detachEntity(mob, true);
                 it.remove();
                 count++;
             }
@@ -169,10 +164,7 @@ public class SilentMobManager {
         int count = 0;
         for (List<SilentMob> list : silentMobs.values()) {
             for (SilentMob mob : list) {
-                if (mob.getEntity() != null) {
-                    entityHider.untrack(mob.getEntity());
-                }
-                mob.despawn();
+                detachEntity(mob, true);
                 count++;
             }
         }
@@ -185,20 +177,14 @@ public class SilentMobManager {
      * Cleanup expired mobs based on timeout.
      */
     public int cleanupExpired(int timeoutSeconds) {
-        if (timeoutSeconds <= 0)
-            return 0;
-
         int count = 0;
         for (Map.Entry<UUID, List<SilentMob>> entry : silentMobs.entrySet()) {
             Iterator<SilentMob> it = entry.getValue().iterator();
             while (it.hasNext()) {
                 SilentMob mob = it.next();
-                if (mob.isExpired(timeoutSeconds) || !mob.isAlive()) {
-                    if (mob.getEntity() != null) {
-                        entityHider.untrack(mob.getEntity());
-                        entityIndex.remove(mob.getEntityId());
-                    }
-                    mob.despawn();
+                boolean expired = timeoutSeconds > 0 && mob.isExpired(timeoutSeconds);
+                if (expired || !mob.isAlive()) {
+                    detachEntity(mob, true);
                     it.remove();
                     count++;
                 }
@@ -214,57 +200,169 @@ public class SilentMobManager {
      * Reassign a mob's owner (used when original owner quits).
      */
     public void reassignOwner(SilentMob mob, Player newOwner) {
-        // Remove from old owner's list
-        List<SilentMob> oldList = silentMobs.get(mob.getOwnerUUID());
-        if (oldList != null) {
-            oldList.remove(mob);
-            if (oldList.isEmpty()) {
-                silentMobs.remove(mob.getOwnerUUID());
-            }
-        }
+        if (mob == null || newOwner == null || !mob.isAlive())
+            return;
 
-        // Create new SilentMob with new owner (since fields are final, we track via
-        // index)
-        SilentMob newMob = new SilentMob(
-                newOwner.getUniqueId(),
-                newOwner.getName(),
-                mob.getMobId(),
-                mob.getEntity(),
-                mob.isGlobal());
-
-        // Untrack old, track new
-        if (mob.getEntity() != null) {
-            entityHider.untrack(mob.getEntity());
-            entityIndex.remove(mob.getEntityId());
-        }
-
-        silentMobs.computeIfAbsent(newOwner.getUniqueId(), k -> new ArrayList<>()).add(newMob);
-        if (newMob.getEntity() != null) {
-            entityIndex.put(newMob.getEntityId(), newMob);
-            entityHider.hideFromAllExcept(newMob.getEntity(), Set.of(newOwner.getUniqueId()));
-        }
+        removeFromOwnerList(mob);
+        mob.reassignOwner(newOwner);
+        silentMobs.computeIfAbsent(newOwner.getUniqueId(), key -> new ArrayList<>()).add(mob);
+        refreshVisibility(mob);
     }
 
     /**
      * Get all owner UUIDs with active mobs.
      */
     public Set<UUID> getAllOwners() {
-        return Collections.unmodifiableSet(silentMobs.keySet());
+        return Set.copyOf(silentMobs.keySet());
     }
 
     /**
      * Hide all currently tracked entities from a newly joined player.
      */
     public void hideAllFrom(Player player) {
-        for (Map.Entry<Integer, SilentMob> entry : entityIndex.entrySet()) {
-            SilentMob mob = entry.getValue();
-            if (mob.isAlive() && !mob.canView(player)) {
-                entityHider.hideFromPlayer(mob.getEntity(), player);
-            }
-            // If player CAN view (owner or permission), ensure they are a viewer
-            if (mob.isAlive() && mob.canView(player)) {
+        for (SilentMob mob : List.copyOf(entityIndex.values())) {
+            if (!mob.isAlive())
+                continue;
+            if (mob.canView(player)) {
                 entityHider.addViewer(mob.getEntityId(), player.getUniqueId());
+            } else {
+                entityHider.removeViewer(mob.getEntityId(), player.getUniqueId());
             }
+        }
+    }
+
+    /**
+     * Recompute one mob's online viewer set from its current access policy.
+     */
+    public void refreshVisibility(SilentMob mob) {
+        if (mob == null || !mob.isAlive())
+            return;
+
+        Set<UUID> allowed = new HashSet<>();
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (mob.canView(online)) {
+                allowed.add(online.getUniqueId());
+            }
+        }
+        entityHider.setViewers(mob.getEntity(), allowed);
+    }
+
+    public void refreshAllViewers() {
+        for (SilentMob mob : List.copyOf(entityIndex.values())) {
+            refreshVisibility(mob);
+        }
+    }
+
+    /**
+     * Apply changed region access rules to already spawned region-managed mobs.
+     */
+    public void refreshRegion(SilentRegion region) {
+        if (region == null)
+            return;
+
+        for (SilentMob mob : List.copyOf(entityIndex.values())) {
+            if (mob.isRegionAccessManaged()
+                    && region.getName().equalsIgnoreCase(mob.getRegionName())) {
+                applyRegionPolicy(mob, region);
+                refreshVisibility(mob);
+            }
+        }
+    }
+
+    public void refreshAllRegionPolicies() {
+        for (SilentMob mob : List.copyOf(entityIndex.values())) {
+            if (!mob.isRegionAccessManaged() || mob.getRegionName() == null)
+                continue;
+            SilentRegion region = plugin.getRegionManager().getRegion(mob.getRegionName());
+            if (region != null) {
+                applyRegionPolicy(mob, region);
+            }
+        }
+    }
+
+    /**
+     * Shared maintenance pass used by the existing five-second task.
+     */
+    public int runMaintenance(int timeoutSeconds) {
+        int removed = cleanupExpired(timeoutSeconds);
+        refreshAllRegionPolicies();
+        reassignOrphanedGlobalMobs();
+        refreshAllViewers();
+        return removed;
+    }
+
+    private void applyRegionPolicy(SilentMob mob, SilentRegion region) {
+        mob.replaceAdditionalViewers(region.getAllowedPlayers());
+        mob.replaceAdditionalViewPermissions(region.getAllowedPermissions());
+        mob.setOwnerVisible(!region.hasAccessRules());
+
+        if (!region.hasAccessRules()
+                && REGION_SYSTEM_OWNER.equals(mob.getOwnerUUID())
+                && mob.isAlive()) {
+            Player nearest = findNearestPlayer(mob.getEntity(), 64.0);
+            if (nearest != null) {
+                reassignOwner(mob, nearest);
+            }
+        }
+    }
+
+    private void reassignOrphanedGlobalMobs() {
+        boolean despawnWithoutPlayer = plugin.getConfigManager().getConfig()
+                .getBoolean("global-silent.despawn-if-no-player", true);
+        double radius = plugin.getConfigManager().getConfig().getDouble("global-silent.assign-radius", 32.0);
+
+        for (SilentMob mob : List.copyOf(entityIndex.values())) {
+            if (!mob.isGlobal() || mob.isRegionAccessManaged() || !mob.isAlive())
+                continue;
+            if (plugin.getServer().getPlayer(mob.getOwnerUUID()) != null)
+                continue;
+
+            Player nearest = findNearestPlayer(mob.getEntity(), radius);
+            if (nearest != null) {
+                reassignOwner(mob, nearest);
+            } else if (despawnWithoutPlayer) {
+                removeSilentMob(mob);
+            }
+        }
+    }
+
+    private Player findNearestPlayer(Entity entity, double radius) {
+        if (entity == null)
+            return null;
+
+        Player nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (!online.getWorld().equals(entity.getWorld()))
+                continue;
+            double distance = online.getLocation().distanceSquared(entity.getLocation());
+            if (distance <= radius * radius && distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = online;
+            }
+        }
+        return nearest;
+    }
+
+    private void detachEntity(SilentMob mob, boolean despawn) {
+        Entity entity = mob.getEntity();
+        if (entity != null) {
+            entityHider.untrack(entity, false);
+            entityIndex.remove(mob.getEntityId(), mob);
+        }
+        if (despawn) {
+            mob.despawn();
+        }
+    }
+
+    private void removeFromOwnerList(SilentMob mob) {
+        UUID owner = mob.getOwnerUUID();
+        List<SilentMob> list = silentMobs.get(owner);
+        if (list == null)
+            return;
+        list.remove(mob);
+        if (list.isEmpty()) {
+            silentMobs.remove(owner, list);
         }
     }
 

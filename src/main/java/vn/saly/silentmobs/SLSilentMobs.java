@@ -23,7 +23,7 @@ import vn.saly.silentmobs.task.MobTimeoutTask;
 import vn.saly.silentmobs.visibility.EntityHider;
 
 /**
- * SLSilentMobs v2.1 - Private/Silent Mobs & Instanced Loot for RPG Servers
+ * Private/Silent Mobs & Instanced Loot for RPG Servers.
  * Author: SalyVn
  *
  * Features:
@@ -96,6 +96,11 @@ public class SLSilentMobs extends JavaPlugin {
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new SilentMobsPlaceholder(this).register();
             getLogger().info("PlaceholderAPI hooked — placeholders registered");
+        }
+
+        if (entityHider.isModelEngineAvailable()) {
+            getLogger().info("ModelEngine " + entityHider.getModelEngineVersion()
+                    + " hooked - client-side model visibility enabled");
         }
 
         getLogger().info("SLSilentMobs v" + getDescription().getVersion() + " enabled | SalyVn");

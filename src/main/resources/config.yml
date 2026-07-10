@@ -1,5 +1,5 @@
 # ============================================
-# SLSilentMobs v2.2.0 by SalyVn
+# SLSilentMobs v2.3.0 by SalyVn
 # Private/Silent Mobs & Instanced Loot for RPG
 # ============================================
 # Config files:
@@ -22,6 +22,11 @@ settings:
   death-notification: true
   # Max silent mobs per player at the same time
   max-mobs-per-player: 10
+
+# Optional integrations. ModelEngine is detected automatically and remains
+# optional; disable this only when another plugin owns its pairing policy.
+integrations:
+  model-engine: true
 
 # ============================================
 # GLOBAL SILENT MODE (Wynncraft-style)

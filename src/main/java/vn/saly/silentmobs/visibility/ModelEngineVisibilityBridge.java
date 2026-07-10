@@ -1,0 +1,186 @@
+package vn.saly.silentmobs.visibility;
+
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
+import vn.saly.silentmobs.SLSilentMobs;
+
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+/**
+ * Reflection-based ModelEngine 4 bridge. Reflection is intentional because
+ * ModelEngine changed viewer arguments from Player in 4.0 to UUID in 4.1.
+ */
+final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listener {
+
+    private static final String API_CLASS = "com.ticxo.modelengine.api.ModelEngineAPI";
+    private static final String ENTITY_HANDLER_CLASS = "com.ticxo.modelengine.api.nms.entity.EntityHandler";
+    private static final String TRACKED_ENTITY_CLASS = "com.ticxo.modelengine.api.nms.entity.wrapper.TrackedEntity";
+    private static final String ADD_MODEL_EVENT_CLASS = "com.ticxo.modelengine.api.events.AddModelEvent";
+    private static final String MODELED_ENTITY_CLASS = "com.ticxo.modelengine.api.model.ModeledEntity";
+    private static final String BASE_ENTITY_CLASS = "com.ticxo.modelengine.api.entity.BaseEntity";
+
+    private final SLSilentMobs plugin;
+    private final Plugin modelEngine;
+    private final Object entityHandler;
+    private final Method wrapTrackedEntity;
+    private final ModelEngineViewerMethods viewerMethods;
+    private final Method addModelEventGetTarget;
+    private final Method modeledEntityGetBase;
+    private final Method baseEntityGetOriginal;
+    private final Consumer<Entity> resync;
+    private final AtomicBoolean warned = new AtomicBoolean();
+    private final Map<UUID, Set<UUID>> hiddenByThisPlugin = new ConcurrentHashMap<>();
+
+    static ModelVisibilityBridge create(SLSilentMobs plugin, Consumer<Entity> resync) {
+        if (!plugin.getConfigManager().getConfig().getBoolean("integrations.model-engine", true)) {
+            return ModelVisibilityBridge.disabled();
+        }
+
+        Plugin modelEngine = plugin.getServer().getPluginManager().getPlugin("ModelEngine");
+        if (modelEngine == null || !modelEngine.isEnabled()) {
+            return ModelVisibilityBridge.disabled();
+        }
+
+        try {
+            return new ModelEngineVisibilityBridge(plugin, modelEngine, resync);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            plugin.getLogger().warning("ModelEngine integration disabled: " + exception.getMessage());
+            return ModelVisibilityBridge.disabled();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private ModelEngineVisibilityBridge(SLSilentMobs plugin, Plugin modelEngine, Consumer<Entity> resync)
+            throws ReflectiveOperationException {
+        this.plugin = plugin;
+        this.modelEngine = modelEngine;
+        this.resync = resync;
+
+        ClassLoader loader = modelEngine.getClass().getClassLoader();
+        Class<?> apiType = Class.forName(API_CLASS, true, loader);
+        Class<?> entityHandlerType = Class.forName(ENTITY_HANDLER_CLASS, true, loader);
+        Class<?> trackedEntityType = Class.forName(TRACKED_ENTITY_CLASS, true, loader);
+        Class<?> addModelEventType = Class.forName(ADD_MODEL_EVENT_CLASS, true, loader);
+        Class<?> modeledEntityType = Class.forName(MODELED_ENTITY_CLASS, true, loader);
+        Class<?> baseEntityType = Class.forName(BASE_ENTITY_CLASS, true, loader);
+
+        entityHandler = apiType.getMethod("getEntityHandler").invoke(null);
+        if (entityHandler == null) {
+            throw new IllegalStateException("ModelEngine EntityHandler is unavailable");
+        }
+
+        wrapTrackedEntity = entityHandlerType.getMethod("wrapTrackedEntity", Entity.class);
+        viewerMethods = ModelEngineViewerMethods.resolve(trackedEntityType);
+        addModelEventGetTarget = addModelEventType.getMethod("getTarget");
+        modeledEntityGetBase = modeledEntityType.getMethod("getBase");
+        baseEntityGetOriginal = baseEntityType.getMethod("getOriginal");
+
+        Class<? extends Event> eventType = (Class<? extends Event>) addModelEventType.asSubclass(Event.class);
+        plugin.getServer().getPluginManager().registerEvent(
+                eventType,
+                this,
+                EventPriority.MONITOR,
+                (listener, event) -> onModelAdded(event),
+                plugin,
+                true);
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return true;
+    }
+
+    @Override
+    public String getVersion() {
+        return modelEngine.getDescription().getVersion();
+    }
+
+    @Override
+    public void hide(Entity entity, Player viewer) {
+        hiddenByThisPlugin.computeIfAbsent(entity.getUniqueId(), key -> ConcurrentHashMap.newKeySet())
+                .add(viewer.getUniqueId());
+        apply(entity, viewer, true, false, false);
+    }
+
+    @Override
+    public void show(Entity entity, Player viewer) {
+        boolean removeHidden = unmarkHidden(entity, viewer);
+        apply(entity, viewer, false, removeHidden, true);
+    }
+
+    @Override
+    public void release(Entity entity, Player viewer) {
+        if (unmarkHidden(entity, viewer)) {
+            apply(entity, viewer, false, true, false);
+        }
+    }
+
+    @Override
+    public void close() {
+        HandlerList.unregisterAll(this);
+        hiddenByThisPlugin.clear();
+    }
+
+    private void apply(Entity entity, Player viewer, boolean hidden, boolean removeHidden, boolean sendPairing) {
+        try {
+            Object trackedEntity = wrapTrackedEntity.invoke(entityHandler, entity);
+            if (trackedEntity == null) {
+                return;
+            }
+            if (hidden) {
+                viewerMethods.hide(trackedEntity, viewer);
+            } else {
+                viewerMethods.show(trackedEntity, viewer, removeHidden, sendPairing);
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            warnOnce(exception);
+        }
+    }
+
+    private void onModelAdded(Event event) {
+        try {
+            Object modeledEntity = addModelEventGetTarget.invoke(event);
+            Object baseEntity = modeledEntityGetBase.invoke(modeledEntity);
+            Object original = baseEntityGetOriginal.invoke(baseEntity);
+            if (!(original instanceof Entity entity)) {
+                return;
+            }
+
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (entity.isValid()) {
+                    resync.accept(entity);
+                }
+            });
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            warnOnce(exception);
+        }
+    }
+
+    private void warnOnce(Throwable throwable) {
+        if (warned.compareAndSet(false, true)) {
+            plugin.getLogger().warning("ModelEngine visibility sync failed: " + throwable.getMessage());
+        }
+    }
+
+    private boolean unmarkHidden(Entity entity, Player viewer) {
+        Set<UUID> viewers = hiddenByThisPlugin.get(entity.getUniqueId());
+        if (viewers == null || !viewers.remove(viewer.getUniqueId())) {
+            return false;
+        }
+        if (viewers.isEmpty()) {
+            hiddenByThisPlugin.remove(entity.getUniqueId(), viewers);
+        }
+        return true;
+    }
+}

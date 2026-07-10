@@ -10,6 +10,8 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import vn.saly.silentmobs.SLSilentMobs;
 import vn.saly.silentmobs.model.SilentMob;
 
+import java.util.Collections;
+
 /**
  * Global Silent Mode — automatically makes ALL spawned mobs silent.
  * Whitelisted mobs (bosses) are excluded and remain visible to all.
@@ -35,6 +37,10 @@ public class GlobalSilentManager implements Listener {
         plugin.saveConfig();
     }
 
+    public void reload() {
+        this.enabled = plugin.getConfigManager().getConfig().getBoolean("global-silent.enabled", false);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         if (!enabled)
@@ -51,15 +57,23 @@ public class GlobalSilentManager implements Listener {
             return; // Boss/special mob — visible to all
         }
 
+        // Close the one-tick MythicMobs initialization gap before model packets can
+        // be paired to unauthorized viewers.
+        plugin.getEntityHider().hideFromAllExcept(entity, Collections.emptySet());
+
         // Check whitelist — MythicMobs (check on next tick since MythicMob may not be
         // initialized yet)
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!entity.isValid())
+            if (!entity.isValid()) {
+                plugin.getEntityHider().untrack(entity, false);
                 return;
+            }
 
             // Check if it's a MythicMob and whitelisted
-            if (isMythicMobWhitelisted(entity))
+            if (isMythicMobWhitelisted(entity)) {
+                plugin.getEntityHider().untrack(entity, true);
                 return;
+            }
 
             // Already tracked? Skip
             if (plugin.getSilentMobManager().isSilentMob(entity))
@@ -70,7 +84,10 @@ public class GlobalSilentManager implements Listener {
             if (nearest == null) {
                 // No player nearby
                 if (plugin.getConfigManager().getConfig().getBoolean("global-silent.despawn-if-no-player", true)) {
+                    plugin.getEntityHider().untrack(entity, false);
                     entity.remove();
+                } else {
+                    plugin.getEntityHider().untrack(entity, true);
                 }
                 return;
             }
@@ -115,8 +132,8 @@ public class GlobalSilentManager implements Listener {
             if (!online.getWorld().equals(entity.getWorld()))
                 continue;
 
-            double dist = online.getLocation().distance(entity.getLocation());
-            if (dist <= radius && dist < minDist) {
+            double dist = online.getLocation().distanceSquared(entity.getLocation());
+            if (dist <= radius * radius && dist < minDist) {
                 minDist = dist;
                 nearest = online;
             }

@@ -6,7 +6,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import vn.saly.silentmobs.SLSilentMobs;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -16,7 +15,7 @@ import java.util.stream.Collectors;
 public class RegionManager {
 
     private final SLSilentMobs plugin;
-    private final Map<String, SilentRegion> regions = new ConcurrentHashMap<>();
+    private final Map<String, SilentRegion> regions = new LinkedHashMap<>();
 
     public RegionManager(SLSilentMobs plugin) {
         this.plugin = plugin;
@@ -73,7 +72,7 @@ public class RegionManager {
                         getDouble(spawn, "spread", 4.0)));
             }
 
-            regions.put(name.toLowerCase(), region);
+            regions.put(name.toLowerCase(Locale.ROOT), region);
         }
 
         plugin.getLogger().info("Loaded " + regions.size() + " silent region(s)");
@@ -126,7 +125,7 @@ public class RegionManager {
      * Create a new region from two corner positions.
      */
     public SilentRegion createRegion(String name, Location pos1, Location pos2) {
-        String key = name.toLowerCase();
+        String key = name.toLowerCase(Locale.ROOT);
         if (regions.containsKey(key))
             return null;
 
@@ -140,7 +139,7 @@ public class RegionManager {
      * Delete a region by name.
      */
     public boolean deleteRegion(String name) {
-        SilentRegion removed = regions.remove(name.toLowerCase());
+        SilentRegion removed = regions.remove(name.toLowerCase(Locale.ROOT));
         if (removed != null) {
             saveRegions();
             return true;
@@ -152,7 +151,7 @@ public class RegionManager {
      * Get a region by name.
      */
     public SilentRegion getRegion(String name) {
-        return regions.get(name.toLowerCase());
+        return regions.get(name.toLowerCase(Locale.ROOT));
     }
 
     /**

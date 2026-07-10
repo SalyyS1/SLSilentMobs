@@ -56,7 +56,7 @@ public class SilentDropManager {
             if (timeout > 0) {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (itemEntity.isValid()) {
-                        hider.untrack(itemEntity);
+                        hider.untrack(itemEntity, false);
                         itemEntity.remove();
                     }
                     silentItems.remove(itemEntity.getEntityId());
@@ -95,7 +95,7 @@ public class SilentDropManager {
             entity = plugin.getSilentMobManager().getEntityHider().getTrackedEntity(entityId);
         }
         if (entity != null) {
-            plugin.getSilentMobManager().getEntityHider().untrack(entity);
+            plugin.getSilentMobManager().getEntityHider().untrack(entity, false);
         }
     }
 
@@ -105,7 +105,7 @@ public class SilentDropManager {
     public void clearAll() {
         EntityHider hider = plugin.getSilentMobManager().getEntityHider();
         for (Item item : silentItemEntities.values()) {
-            hider.untrack(item);
+            hider.untrack(item, false);
             if (item.isValid()) {
                 item.remove();
             }

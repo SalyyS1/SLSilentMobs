@@ -17,6 +17,7 @@ import vn.saly.silentmobs.region.RegionSpawnEntry;
 import vn.saly.silentmobs.util.MobSpawner;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -416,7 +417,7 @@ public class SilentMobCommand implements CommandExecutor {
             sendMsg(sender, cfgMsg("region-no-wand"));
             return;
         }
-        String name = args[2].toLowerCase();
+        String name = args[2].toLowerCase(Locale.ROOT);
         Location pos1 = plugin.getWandManager().getPos(player, 1);
         Location pos2 = plugin.getWandManager().getPos(player, 2);
 
@@ -517,7 +518,7 @@ public class SilentMobCommand implements CommandExecutor {
             sendMsg(sender, cfgMsg("region-not-found").replace("{name}", args[2]));
             return;
         }
-        String mob = args[3].toUpperCase();
+        String mob = args[3].toUpperCase(Locale.ROOT);
         if (exempt) {
             if (add)
                 r.addExemptMob(mob);
@@ -647,6 +648,7 @@ public class SilentMobCommand implements CommandExecutor {
         sendMsg(sender, (add ? "&aAdded" : "&cRemoved") + " &e" + name + (add ? " &ato" : " &cfrom")
                 + " allowed players of &b" + r.getName());
         plugin.getRegionManager().saveRegions();
+        plugin.getSilentMobManager().refreshRegion(r);
     }
 
     private void regionModifyPerm(CommandSender sender, String[] args, boolean add) {
@@ -667,6 +669,7 @@ public class SilentMobCommand implements CommandExecutor {
         sendMsg(sender, (add ? "&aAdded" : "&cRemoved") + " &e" + perm + (add ? " &ato" : " &cfrom")
                 + " allowed permissions of &b" + r.getName());
         plugin.getRegionManager().saveRegions();
+        plugin.getSilentMobManager().refreshRegion(r);
     }
 
     // ==========================================
@@ -678,8 +681,12 @@ public class SilentMobCommand implements CommandExecutor {
             return;
         }
         plugin.getConfigManager().reloadAll();
+        plugin.getEntityHider().reloadIntegrations();
         plugin.getGlobalSilentConfig().load(plugin.getConfigManager().getConfig());
+        plugin.getGlobalSilentManager().reload();
         plugin.getRegionManager().loadRegions();
+        plugin.getSilentMobManager().refreshAllRegionPolicies();
+        plugin.getSilentMobManager().refreshAllViewers();
         sendMsg(sender, cfgMsg("reload-success"));
     }
 
