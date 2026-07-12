@@ -35,6 +35,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private final Object entityHandler;
     private final Method wrapTrackedEntity;
     private final ModelEngineViewerMethods viewerMethods;
+    private final ModelEngineEntityLifecycleMethods lifecycleMethods;
     private final Method addModelEventGetTarget;
     private final Method modeledEntityGetBase;
     private final Method baseEntityGetOriginal;
@@ -82,6 +83,8 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
 
         wrapTrackedEntity = entityHandlerType.getMethod("wrapTrackedEntity", Entity.class);
         viewerMethods = ModelEngineViewerMethods.resolve(trackedEntityType);
+        lifecycleMethods = ModelEngineEntityLifecycleMethods.resolve(
+                apiType, entityHandlerType, modeledEntityType, baseEntityType);
         addModelEventGetTarget = addModelEventType.getMethod("getTarget");
         modeledEntityGetBase = modeledEntityType.getMethod("getBase");
         baseEntityGetOriginal = baseEntityType.getMethod("getOriginal");
@@ -140,8 +143,12 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
             }
             if (hidden) {
                 viewerMethods.hide(trackedEntity, viewer);
+                lifecycleMethods.despawn(entityHandler, entity, viewer);
             } else {
                 viewerMethods.show(trackedEntity, viewer, removeHidden, sendPairing);
+                if (sendPairing) {
+                    lifecycleMethods.spawn(entityHandler, entity, viewer);
+                }
             }
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             warnOnce(exception);
