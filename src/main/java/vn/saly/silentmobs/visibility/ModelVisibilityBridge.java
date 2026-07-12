@@ -3,6 +3,9 @@ package vn.saly.silentmobs.visibility;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Optional bridge for plugins that render extra client-side entities.
  */
@@ -17,6 +20,14 @@ interface ModelVisibilityBridge extends AutoCloseable {
     void show(Entity entity, Player viewer);
 
     void release(Entity entity, Player viewer);
+
+    /**
+     * Returns client-only entity IDs currently used by the model for this base
+     * entity. These IDs must follow the same visibility policy as the base.
+     */
+    default Set<Integer> getClientEntityIds(Entity entity) {
+        return Collections.emptySet();
+    }
 
     @Override
     void close();

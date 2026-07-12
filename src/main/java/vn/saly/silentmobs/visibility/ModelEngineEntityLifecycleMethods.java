@@ -41,9 +41,13 @@ final class ModelEngineEntityLifecycleMethods {
         apply(forceDespawn, entityHandler, entity, viewer);
     }
 
+    Object getModeledEntity(Entity entity) throws ReflectiveOperationException {
+        return getModeledEntity.invoke(null, entity);
+    }
+
     private void apply(Method action, Object entityHandler, Entity entity, Player viewer)
             throws ReflectiveOperationException {
-        Object modeledEntity = getModeledEntity.invoke(null, entity);
+        Object modeledEntity = getModeledEntity(entity);
         if (modeledEntity == null) {
             return;
         }

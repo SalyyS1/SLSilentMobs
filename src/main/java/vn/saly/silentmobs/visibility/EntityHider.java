@@ -30,9 +30,16 @@ public class EntityHider {
     // entityId -> Entity reference
     private final Map<Integer, Entity> trackedEntities = new ConcurrentHashMap<>();
 
+    // Base entity ID -> its client-only ModelEngine entity IDs.
+    private final Map<Integer, Set<Integer>> modelEntitiesByBase = new ConcurrentHashMap<>();
+
+    // Client-only ModelEngine entity ID -> silent base entity ID.
+    private final Map<Integer, Integer> modelEntityOwners = new ConcurrentHashMap<>();
+
     private static final PacketType[] ENTITY_PACKETS = {
             PacketType.Play.Server.SPAWN_ENTITY,
             PacketType.Play.Server.ENTITY_METADATA,
+            PacketType.Play.Server.ENTITY_POSITION_SYNC,
             PacketType.Play.Server.REL_ENTITY_MOVE,
             PacketType.Play.Server.REL_ENTITY_MOVE_LOOK,
             PacketType.Play.Server.ENTITY_LOOK,
@@ -42,13 +49,15 @@ public class EntityHider {
             PacketType.Play.Server.ENTITY_EQUIPMENT,
             PacketType.Play.Server.ENTITY_EFFECT,
             PacketType.Play.Server.ENTITY_SOUND,
-            PacketType.Play.Server.ENTITY_STATUS
+            PacketType.Play.Server.ENTITY_STATUS,
+            PacketType.Play.Server.MOUNT
     };
 
     public EntityHider(SLSilentMobs plugin) {
         this.plugin = plugin;
         this.protocolManager = ProtocolLibrary.getProtocolManager();
-        this.modelBridge = ModelEngineVisibilityBridge.create(plugin, this::syncModelVisibility);
+        this.modelBridge = ModelEngineVisibilityBridge.create(
+                plugin, this::syncModelVisibility, this::clearRemovedModelEntityIds);
         registerPacketListener();
     }
 
@@ -64,23 +73,26 @@ public class EntityHider {
                     return;
                 int entityId = packet.getIntegers().read(0);
 
-                // Only intercept tracked entities
-                if (!visibleTo.containsKey(entityId))
+                int baseEntityId = getBaseEntityId(entityId);
+                if (baseEntityId == -1) {
                     return;
+                }
 
-                Entity tracked = trackedEntities.get(entityId);
+                Entity tracked = trackedEntities.get(baseEntityId);
                 if (event.getPacketType().equals(PacketType.Play.Server.SPAWN_ENTITY)
+                        && entityId == baseEntityId
                         && tracked != null
                         && packet.getUUIDs().size() > 0
                         && !tracked.getUniqueId().equals(packet.getUUIDs().read(0))) {
-                    visibleTo.remove(entityId);
-                    trackedEntities.remove(entityId, tracked);
+                    visibleTo.remove(baseEntityId);
+                    trackedEntities.remove(baseEntityId, tracked);
+                    clearModelEntityIds(baseEntityId);
                     plugin.getServer().getScheduler().runTask(plugin, () -> releaseModelState(tracked));
                     return;
                 }
 
                 Player receiver = event.getPlayer();
-                Set<UUID> allowed = visibleTo.get(entityId);
+                Set<UUID> allowed = visibleTo.get(baseEntityId);
 
                 // If receiver is NOT in the allowed set, cancel the packet
                 if (allowed != null && !allowed.contains(receiver.getUniqueId())) {
@@ -119,9 +131,12 @@ public class EntityHider {
         Entity previousEntity = trackedEntities.put(entityId, entity);
 
         if (previousEntity != null && !previousEntity.getUniqueId().equals(entity.getUniqueId())) {
+            clearModelEntityIds(entityId);
             releaseModelState(previousEntity);
             previous = null;
         }
+
+        refreshModelEntityIds(entity);
 
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             boolean canSeeNow = allowed.contains(online.getUniqueId());
@@ -231,6 +246,7 @@ public class EntityHider {
             return;
 
         Entity target = tracked != null ? tracked : entity;
+        clearModelEntityIds(entityId);
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (restoreVisibility && !allowed.contains(online.getUniqueId())) {
                 showEntity(target, online);
@@ -286,6 +302,8 @@ public class EntityHider {
         }
         visibleTo.clear();
         trackedEntities.clear();
+        modelEntitiesByBase.clear();
+        modelEntityOwners.clear();
     }
 
     public boolean isModelEngineAvailable() {
@@ -305,7 +323,8 @@ public class EntityHider {
         }
         previous.close();
 
-        modelBridge = ModelEngineVisibilityBridge.create(plugin, this::syncModelVisibility);
+        modelBridge = ModelEngineVisibilityBridge.create(
+                plugin, this::syncModelVisibility, this::clearRemovedModelEntityIds);
         for (Entity entity : List.copyOf(trackedEntities.values())) {
             syncModelVisibility(entity);
         }
@@ -333,17 +352,20 @@ public class EntityHider {
             return;
         }
 
+        refreshModelEntityIds(entity);
+
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (allowed.contains(online.getUniqueId())) {
                 modelBridge.show(entity, online);
             } else {
-                modelBridge.hide(entity, online);
+                hideEntity(entity, online);
             }
         }
     }
 
     private void hideEntity(Entity entity, Player player) {
-        sendDestroyPacket(player, entity.getEntityId());
+        refreshModelEntityIds(entity);
+        sendDestroyPacket(player, getClientEntityIds(entity.getEntityId()));
         modelBridge.hide(entity, player);
     }
 
@@ -365,10 +387,75 @@ public class EntityHider {
         }
     }
 
-    private void sendDestroyPacket(Player player, int entityId) {
+    private int getBaseEntityId(int entityId) {
+        if (visibleTo.containsKey(entityId)) {
+            return entityId;
+        }
+
+        Integer baseEntityId = modelEntityOwners.get(entityId);
+        if (baseEntityId == null || !visibleTo.containsKey(baseEntityId)) {
+            return -1;
+        }
+        return baseEntityId;
+    }
+
+    private void refreshModelEntityIds(Entity entity) {
+        refreshModelEntityIds(entity, false);
+    }
+
+    private void clearRemovedModelEntityIds(Entity entity) {
+        refreshModelEntityIds(entity, true);
+    }
+
+    private void refreshModelEntityIds(Entity entity, boolean clearWhenEmpty) {
+        Set<Integer> ids = new HashSet<>(modelBridge.getClientEntityIds(entity));
+        ids.remove(entity.getEntityId());
+        if (ids.isEmpty()) {
+            if (clearWhenEmpty) {
+                clearModelEntityIds(entity.getEntityId());
+            }
+            return;
+        }
+
+        int baseEntityId = entity.getEntityId();
+        Set<Integer> replacement = ConcurrentHashMap.newKeySet();
+        replacement.addAll(ids);
+        Set<Integer> previous = modelEntitiesByBase.put(baseEntityId, replacement);
+        if (previous != null) {
+            for (int previousId : previous) {
+                modelEntityOwners.remove(previousId, baseEntityId);
+            }
+        }
+        for (int modelEntityId : replacement) {
+            modelEntityOwners.put(modelEntityId, baseEntityId);
+        }
+    }
+
+    private void clearModelEntityIds(int baseEntityId) {
+        Set<Integer> ids = modelEntitiesByBase.remove(baseEntityId);
+        if (ids != null) {
+            for (int modelEntityId : ids) {
+                modelEntityOwners.remove(modelEntityId, baseEntityId);
+            }
+        }
+    }
+
+    private List<Integer> getClientEntityIds(int baseEntityId) {
+        Set<Integer> ids = modelEntitiesByBase.get(baseEntityId);
+        if (ids == null || ids.isEmpty()) {
+            return List.of(baseEntityId);
+        }
+
+        List<Integer> allIds = new ArrayList<>(ids.size() + 1);
+        allIds.add(baseEntityId);
+        allIds.addAll(ids);
+        return allIds;
+    }
+
+    private void sendDestroyPacket(Player player, List<Integer> entityIds) {
         try {
             PacketContainer destroy = protocolManager.createPacket(PacketType.Play.Server.ENTITY_DESTROY);
-            destroy.getIntLists().write(0, List.of(entityId));
+            destroy.getIntLists().write(0, entityIds);
             protocolManager.sendServerPacket(player, destroy);
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to send destroy packet: " + e.getMessage());

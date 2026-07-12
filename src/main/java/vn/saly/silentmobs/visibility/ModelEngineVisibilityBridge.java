@@ -27,6 +27,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private static final String ENTITY_HANDLER_CLASS = "com.ticxo.modelengine.api.nms.entity.EntityHandler";
     private static final String TRACKED_ENTITY_CLASS = "com.ticxo.modelengine.api.nms.entity.wrapper.TrackedEntity";
     private static final String ADD_MODEL_EVENT_CLASS = "com.ticxo.modelengine.api.events.AddModelEvent";
+    private static final String REMOVE_MODEL_EVENT_CLASS = "com.ticxo.modelengine.api.events.RemoveModelEvent";
     private static final String MODELED_ENTITY_CLASS = "com.ticxo.modelengine.api.model.ModeledEntity";
     private static final String BASE_ENTITY_CLASS = "com.ticxo.modelengine.api.entity.BaseEntity";
 
@@ -37,13 +38,16 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private final ModelEngineViewerMethods viewerMethods;
     private final ModelEngineEntityLifecycleMethods lifecycleMethods;
     private final Method addModelEventGetTarget;
+    private final Method removeModelEventGetTarget;
     private final Method modeledEntityGetBase;
     private final Method baseEntityGetOriginal;
     private final Consumer<Entity> resync;
+    private final Consumer<Entity> modelRemoved;
     private final AtomicBoolean warned = new AtomicBoolean();
     private final Map<UUID, Set<UUID>> hiddenByThisPlugin = new ConcurrentHashMap<>();
 
-    static ModelVisibilityBridge create(SLSilentMobs plugin, Consumer<Entity> resync) {
+    static ModelVisibilityBridge create(SLSilentMobs plugin, Consumer<Entity> resync,
+            Consumer<Entity> modelRemoved) {
         if (!plugin.getConfigManager().getConfig().getBoolean("integrations.model-engine", true)) {
             return ModelVisibilityBridge.disabled();
         }
@@ -54,7 +58,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
         }
 
         try {
-            return new ModelEngineVisibilityBridge(plugin, modelEngine, resync);
+            return new ModelEngineVisibilityBridge(plugin, modelEngine, resync, modelRemoved);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             plugin.getLogger().warning("ModelEngine integration disabled: " + exception.getMessage());
             return ModelVisibilityBridge.disabled();
@@ -62,17 +66,20 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     }
 
     @SuppressWarnings("unchecked")
-    private ModelEngineVisibilityBridge(SLSilentMobs plugin, Plugin modelEngine, Consumer<Entity> resync)
+    private ModelEngineVisibilityBridge(SLSilentMobs plugin, Plugin modelEngine, Consumer<Entity> resync,
+            Consumer<Entity> modelRemoved)
             throws ReflectiveOperationException {
         this.plugin = plugin;
         this.modelEngine = modelEngine;
         this.resync = resync;
+        this.modelRemoved = modelRemoved;
 
         ClassLoader loader = modelEngine.getClass().getClassLoader();
         Class<?> apiType = Class.forName(API_CLASS, true, loader);
         Class<?> entityHandlerType = Class.forName(ENTITY_HANDLER_CLASS, true, loader);
         Class<?> trackedEntityType = Class.forName(TRACKED_ENTITY_CLASS, true, loader);
         Class<?> addModelEventType = Class.forName(ADD_MODEL_EVENT_CLASS, true, loader);
+        Class<?> removeModelEventType = Class.forName(REMOVE_MODEL_EVENT_CLASS, true, loader);
         Class<?> modeledEntityType = Class.forName(MODELED_ENTITY_CLASS, true, loader);
         Class<?> baseEntityType = Class.forName(BASE_ENTITY_CLASS, true, loader);
 
@@ -86,17 +93,12 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
         lifecycleMethods = ModelEngineEntityLifecycleMethods.resolve(
                 apiType, entityHandlerType, modeledEntityType, baseEntityType);
         addModelEventGetTarget = addModelEventType.getMethod("getTarget");
+        removeModelEventGetTarget = removeModelEventType.getMethod("getTarget");
         modeledEntityGetBase = modeledEntityType.getMethod("getBase");
         baseEntityGetOriginal = baseEntityType.getMethod("getOriginal");
 
-        Class<? extends Event> eventType = (Class<? extends Event>) addModelEventType.asSubclass(Event.class);
-        plugin.getServer().getPluginManager().registerEvent(
-                eventType,
-                this,
-                EventPriority.MONITOR,
-                (listener, event) -> onModelAdded(event),
-                plugin,
-                true);
+        registerModelEvent(addModelEventType, this::onModelAdded);
+        registerModelEvent(removeModelEventType, this::onModelRemoved);
     }
 
     @Override
@@ -130,6 +132,16 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     }
 
     @Override
+    public Set<Integer> getClientEntityIds(Entity entity) {
+        try {
+            return ModelEngineClientEntityIds.collect(lifecycleMethods.getModeledEntity(entity));
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            warnOnce(exception);
+            return Set.of();
+        }
+    }
+
+    @Override
     public void close() {
         HandlerList.unregisterAll(this);
         hiddenByThisPlugin.clear();
@@ -157,21 +169,54 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
 
     private void onModelAdded(Event event) {
         try {
-            Object modeledEntity = addModelEventGetTarget.invoke(event);
-            Object baseEntity = modeledEntityGetBase.invoke(modeledEntity);
-            Object original = baseEntityGetOriginal.invoke(baseEntity);
-            if (!(original instanceof Entity entity)) {
+            Entity entity = getOriginalEntity(event, addModelEventGetTarget);
+            if (entity == null) {
                 return;
             }
 
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 if (entity.isValid()) {
                     resync.accept(entity);
+                    // Renderer initialization can finish after the add event.
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        if (entity.isValid()) {
+                            resync.accept(entity);
+                        }
+                    }, 1L);
                 }
             });
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             warnOnce(exception);
         }
+    }
+
+    private void onModelRemoved(Event event) {
+        try {
+            Entity entity = getOriginalEntity(event, removeModelEventGetTarget);
+            if (entity != null) {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> modelRemoved.accept(entity), 1L);
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            warnOnce(exception);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void registerModelEvent(Class<?> eventType, java.util.function.Consumer<Event> handler) {
+        plugin.getServer().getPluginManager().registerEvent(
+                (Class<? extends Event>) eventType.asSubclass(Event.class),
+                this,
+                EventPriority.MONITOR,
+                (listener, event) -> handler.accept(event),
+                plugin,
+                true);
+    }
+
+    private Entity getOriginalEntity(Event event, Method getTarget) throws ReflectiveOperationException {
+        Object modeledEntity = getTarget.invoke(event);
+        Object baseEntity = modeledEntityGetBase.invoke(modeledEntity);
+        Object original = baseEntityGetOriginal.invoke(baseEntity);
+        return original instanceof Entity entity ? entity : null;
     }
 
     private void warnOnce(Throwable throwable) {
