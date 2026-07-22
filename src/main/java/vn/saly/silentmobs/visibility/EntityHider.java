@@ -13,6 +13,7 @@ import vn.saly.silentmobs.SLSilentMobs;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * ProtocolLib-based entity visibility manager.
@@ -37,6 +38,8 @@ public class EntityHider {
 
     // Client-only ModelEngine entity ID -> silent base entity ID.
     private final Map<Integer, Integer> modelEntityOwners = new ConcurrentHashMap<>();
+    private final LongAdder cancelledBasePackets = new LongAdder();
+    private final LongAdder cancelledModelPackets = new LongAdder();
 
     private static final PacketType[] ENTITY_PACKETS = {
             PacketType.Play.Server.SPAWN_ENTITY,
@@ -102,6 +105,11 @@ public class EntityHider {
 
                 // If receiver is NOT in the allowed set, cancel the packet
                 if (allowed != null && !allowed.contains(receiver.getUniqueId())) {
+                    if (entityId == baseEntityId) {
+                        cancelledBasePackets.increment();
+                    } else {
+                        cancelledModelPackets.increment();
+                    }
                     event.setCancelled(true);
                 }
             }
@@ -331,6 +339,43 @@ public class EntityHider {
 
     public String getModelEngineVersion() {
         return modelBridge.getVersion();
+    }
+
+    /**
+     * Snapshot used to diagnose a live client-visibility problem. Commands run
+     * on the server thread, so refreshing model IDs here is safe.
+     */
+    public List<String> getVisibilityDiagnostics() {
+        List<String> lines = new ArrayList<>();
+        String integration = modelBridge.isAvailable()
+                ? "hooked " + modelBridge.getVersion()
+                : "not available";
+        lines.add("ModelEngine: " + integration);
+        lines.add("Cancelled packets: base=" + cancelledBasePackets.sum()
+                + ", model=" + cancelledModelPackets.sum());
+
+        List<Integer> baseIds = new ArrayList<>(trackedEntities.keySet());
+        Collections.sort(baseIds);
+        if (baseIds.isEmpty()) {
+            lines.add("Tracked silent mobs: 0");
+            return lines;
+        }
+
+        lines.add("Tracked silent mobs: " + baseIds.size());
+        for (int baseId : baseIds) {
+            Entity entity = trackedEntities.get(baseId);
+            Set<UUID> viewers = visibleTo.get(baseId);
+            if (entity == null || viewers == null) {
+                continue;
+            }
+
+            refreshModelEntityIds(entity, true);
+            List<Integer> clientIds = new ArrayList<>(modelEntitiesByBase.getOrDefault(baseId, Set.of()));
+            Collections.sort(clientIds);
+            lines.add("#" + baseId + " " + entity.getType().name()
+                    + " viewers=" + viewers.size() + " clientIds=" + clientIds);
+        }
+        return lines;
     }
 
     public void reloadIntegrations() {

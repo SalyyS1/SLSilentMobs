@@ -11,6 +11,10 @@ All notable changes to SLSilentMobs will be documented in this file.
 - Track ModelEngine VFX pivot and model display IDs created by skills for a private mob, so their packets follow the same viewer policy as the mob.
 - Keep each ModelEngine tracked-entity wrapper for the private mob's lifetime so wrapper-local audience and forced-hidden state cannot be discarded between syncs.
 
+### Diagnostics
+
+- Added `/sm debug` to report ModelEngine integration state, mapped client-side IDs, and base/model packet-cancellation counters from the live server.
+
 ### Compatibility
 
 - Verified the native audience integration against ModelEngine R4.0.7, R4.0.9, and R4.1.0 APIs.

@@ -50,6 +50,7 @@ public class SilentMobCommand implements CommandExecutor {
             case "list" -> handleList(sender, args);
             case "global" -> handleGlobal(sender, args);
             case "reload" -> handleReload(sender);
+            case "debug" -> handleDebug(sender);
             case "wand" -> handleWand(sender);
             case "region" -> handleRegion(sender, args);
             case "help" -> handleHelp(sender);
@@ -80,12 +81,25 @@ public class SilentMobCommand implements CommandExecutor {
         sendMsg(sender, cm.getMessage("help-global-desc"));
         sendMsg(sender, cm.getMessage("help-reload"));
         sendMsg(sender, cm.getMessage("help-reload-desc"));
+        sendMsg(sender, "&e/sm debug &8  âž¥ &fShow live model visibility diagnostics");
         sendMsg(sender, cm.getMessage("help-wand"));
         sendMsg(sender, cm.getMessage("help-wand-desc"));
         sendMsg(sender, cm.getMessage("help-region"));
         sendMsg(sender, cm.getMessage("help-region-desc"));
         sendMsg(sender, cm.getMessage("help-footer"));
         sendMsg(sender, cm.getMessage("help-tip"));
+    }
+
+    private void handleDebug(CommandSender sender) {
+        if (!sender.hasPermission("silentmob.admin")) {
+            sendMsg(sender, cfgMsg("no-permission"));
+            return;
+        }
+
+        sendMsg(sender, "&b&lSLSilentMobs Visibility Debug");
+        for (String line : plugin.getEntityHider().getVisibilityDiagnostics()) {
+            sendMsg(sender, "&7" + line);
+        }
     }
 
     // ==========================================

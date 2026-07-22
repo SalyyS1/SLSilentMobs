@@ -23,7 +23,7 @@ public class SilentMobTab implements TabCompleter {
     private final SLSilentMobs plugin;
 
     private static final List<String> ROOT_CMDS = Arrays.asList(
-            "spawn", "despawn", "despawnall", "list", "global", "reload", "wand", "region", "help");
+            "spawn", "despawn", "despawnall", "list", "global", "reload", "debug", "wand", "region", "help");
     private static final List<String> GLOBAL_SUBS = Arrays.asList("on", "off", "status", "whitelist");
     private static final List<String> WHITELIST_ACTIONS = Arrays.asList("add", "remove");
     private static final List<String> REGION_SUBS = Arrays.asList(
