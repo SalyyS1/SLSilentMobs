@@ -38,8 +38,13 @@ public class EntityHider {
 
     // Client-only ModelEngine entity ID -> silent base entity ID.
     private final Map<Integer, Integer> modelEntityOwners = new ConcurrentHashMap<>();
+    private final Map<Integer, Set<Integer>> mountedModelEntitiesByBase = new ConcurrentHashMap<>();
+    private final Map<Integer, Set<Integer>> mountedChildrenByVehicle = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> mountedParentByChild = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> mountedVehicleOwners = new ConcurrentHashMap<>();
     private final LongAdder cancelledBasePackets = new LongAdder();
     private final LongAdder cancelledModelPackets = new LongAdder();
+    private final LongAdder mountedModelEntities = new LongAdder();
 
     private static final PacketType[] ENTITY_PACKETS = {
             PacketType.Play.Server.SPAWN_ENTITY,
@@ -84,6 +89,10 @@ public class EntityHider {
                     return;
                 }
 
+                Set<Integer> mountedChildren = event.getPacketType().equals(PacketType.Play.Server.MOUNT)
+                        ? registerMountedChildren(entityId, baseEntityId, packet)
+                        : Set.of();
+
                 Entity tracked = trackedEntities.get(baseEntityId);
                 if (event.getPacketType().equals(PacketType.Play.Server.SPAWN_ENTITY)
                         && entityId == baseEntityId
@@ -111,6 +120,9 @@ public class EntityHider {
                         cancelledModelPackets.increment();
                     }
                     event.setCancelled(true);
+                    if (!mountedChildren.isEmpty()) {
+                        destroyMountedChildren(receiver.getUniqueId(), mountedChildren);
+                    }
                 }
             }
         });
@@ -331,6 +343,10 @@ public class EntityHider {
         trackedEntities.clear();
         modelEntitiesByBase.clear();
         modelEntityOwners.clear();
+        mountedModelEntitiesByBase.clear();
+        mountedChildrenByVehicle.clear();
+        mountedParentByChild.clear();
+        mountedVehicleOwners.clear();
     }
 
     public boolean isModelEngineAvailable() {
@@ -352,7 +368,8 @@ public class EntityHider {
                 : "not available";
         lines.add("ModelEngine: " + integration);
         lines.add("Cancelled packets: base=" + cancelledBasePackets.sum()
-                + ", model=" + cancelledModelPackets.sum());
+                + ", model=" + cancelledModelPackets.sum()
+                + ", mountMapped=" + mountedModelEntities.sum());
 
         List<Integer> baseIds = new ArrayList<>(trackedEntities.keySet());
         Collections.sort(baseIds);
@@ -514,17 +531,64 @@ public class EntityHider {
         return baseEntityId;
     }
 
+    private Set<Integer> registerMountedChildren(int vehicleId, int baseEntityId, PacketContainer packet) {
+        Set<Integer> passengers = new HashSet<>();
+        if (packet.getIntegerArrays().size() > 0) {
+            int[] values = packet.getIntegerArrays().readSafely(0);
+            if (values != null) {
+                for (int value : values) {
+                    passengers.add(value);
+                }
+            }
+        }
+        if (packet.getIntLists().size() > 0) {
+            List<Integer> values = packet.getIntLists().readSafely(0);
+            if (values != null) {
+                passengers.addAll(values);
+            }
+        }
+
+        MountedClientEntityTracker.Update update = MountedClientEntityTracker.update(
+                vehicleId, baseEntityId, passengers, modelEntitiesByBase, mountedModelEntitiesByBase,
+                mountedChildrenByVehicle, mountedParentByChild, mountedVehicleOwners);
+        for (int childId : update.added()) {
+            Integer previousBase = modelEntityOwners.put(childId, baseEntityId);
+            if (previousBase != null && previousBase != baseEntityId) {
+                Set<Integer> previous = modelEntitiesByBase.get(previousBase);
+                if (previous != null) {
+                    previous.remove(childId);
+                }
+            }
+            modelEntitiesByBase.computeIfAbsent(baseEntityId, ignored -> ConcurrentHashMap.newKeySet()).add(childId);
+        }
+        mountedModelEntities.add(update.added().size());
+        return update.added();
+    }
+
+    private void destroyMountedChildren(UUID receiverId, Set<Integer> entityIds) {
+        List<Integer> children = List.copyOf(entityIds);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            Player receiver = plugin.getServer().getPlayer(receiverId);
+            if (receiver != null && receiver.isOnline()) {
+                sendDestroyPacket(receiver, children);
+            }
+        });
+    }
+
     private Set<Integer> refreshModelEntityIds(Entity entity) {
         return refreshModelEntityIds(entity, false);
     }
 
     private void clearRemovedModelEntityIds(Entity entity) {
+        MountedClientEntityTracker.clearBase(entity.getEntityId(), mountedModelEntitiesByBase,
+                mountedChildrenByVehicle, mountedParentByChild, mountedVehicleOwners);
         refreshModelEntityIds(entity, true);
     }
 
     private Set<Integer> refreshModelEntityIds(Entity entity, boolean clearWhenEmpty) {
         Set<Integer> ids = new HashSet<>(modelBridge.getClientEntityIds(entity));
         ids.remove(entity.getEntityId());
+        ids.addAll(mountedModelEntitiesByBase.getOrDefault(entity.getEntityId(), Set.of()));
         if (ids.isEmpty()) {
             if (clearWhenEmpty) {
                 clearModelEntityIds(entity.getEntityId());
@@ -552,6 +616,8 @@ public class EntityHider {
     }
 
     private void clearModelEntityIds(int baseEntityId) {
+        MountedClientEntityTracker.clearBase(baseEntityId, mountedModelEntitiesByBase,
+                mountedChildrenByVehicle, mountedParentByChild, mountedVehicleOwners);
         Set<Integer> ids = modelEntitiesByBase.remove(baseEntityId);
         if (ids != null) {
             for (int modelEntityId : ids) {

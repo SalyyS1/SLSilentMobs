@@ -32,7 +32,7 @@ A packet-level entity visibility plugin inspired by **Wynncraft**. Mobs, item dr
 Spawn mobs that are **only visible to a designated player**. All other players on the server cannot see or interact with the entity.
 
 - Supports both **Vanilla** and **MythicMobs** entity types
-- Hides **ModelEngine 4** client-side models and attached skill VFX together with their base entity
+- Hides **ModelEngine 4** client-side models, attached skill VFX, and dynamically mounted client parts together with their base entity
 - Mobs only target their assigned owner
 - Permission-based visibility — share mobs with players who have a specific permission node
 - Automatic despawn on owner disconnect, timeout expiry, or plugin disable

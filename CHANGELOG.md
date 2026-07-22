@@ -10,6 +10,7 @@ All notable changes to SLSilentMobs will be documented in this file.
 - Keep the native audience policy synchronized across viewer changes, disconnects, integration reloads, and entity cleanup while retaining packet-level cleanup as a fallback.
 - Track ModelEngine VFX pivot and model display IDs created by skills for a private mob, so their packets follow the same viewer policy as the mob.
 - Keep each ModelEngine tracked-entity wrapper for the private mob's lifetime so wrapper-local audience and forced-hidden state cannot be discarded between syncs.
+- Learn client-only model descendants from `MOUNT` packets and release their mappings when a mount changes or the private base model is removed.
 
 ### Diagnostics
 
