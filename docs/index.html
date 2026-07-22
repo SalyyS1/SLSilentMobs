@@ -1423,7 +1423,7 @@ regions:
                     ModelEngine VFX created by that mob's skills. The tracked-entity wrapper is retained for the
                     private mob's lifetime so the audience policy cannot be lost on a later sync. Client-only parts
                     discovered through model mount hierarchies follow the same policy and are released on unmount or
-                    base-model removal.
+                    base-model removal. Batched renderer packets are filtered before reaching unauthorized clients.
                 </p>
                 <p data-lang="vi">
                     Khi có ModelEngine 4, SLSilentMobs đặt native audience predicate theo từng player trước khi

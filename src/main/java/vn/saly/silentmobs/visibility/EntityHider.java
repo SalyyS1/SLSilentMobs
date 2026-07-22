@@ -44,6 +44,7 @@ public class EntityHider {
     private final Map<Integer, Integer> mountedVehicleOwners = new ConcurrentHashMap<>();
     private final LongAdder cancelledBasePackets = new LongAdder();
     private final LongAdder cancelledModelPackets = new LongAdder();
+    private final LongAdder cancelledBundledPackets = new LongAdder();
     private final LongAdder mountedModelEntities = new LongAdder();
 
     private static final PacketType[] ENTITY_PACKETS = {
@@ -60,8 +61,25 @@ public class EntityHider {
             PacketType.Play.Server.ENTITY_EFFECT,
             PacketType.Play.Server.ENTITY_SOUND,
             PacketType.Play.Server.ENTITY_STATUS,
-            PacketType.Play.Server.MOUNT
+            PacketType.Play.Server.MOUNT,
+            PacketType.Play.Server.BUNDLE
     };
+
+    private static final Set<PacketType> FILTERED_ENTITY_PACKETS = Set.of(
+            PacketType.Play.Server.SPAWN_ENTITY,
+            PacketType.Play.Server.ENTITY_METADATA,
+            PacketType.Play.Server.ENTITY_POSITION_SYNC,
+            PacketType.Play.Server.REL_ENTITY_MOVE,
+            PacketType.Play.Server.REL_ENTITY_MOVE_LOOK,
+            PacketType.Play.Server.ENTITY_LOOK,
+            PacketType.Play.Server.ENTITY_TELEPORT,
+            PacketType.Play.Server.ENTITY_HEAD_ROTATION,
+            PacketType.Play.Server.ENTITY_VELOCITY,
+            PacketType.Play.Server.ENTITY_EQUIPMENT,
+            PacketType.Play.Server.ENTITY_EFFECT,
+            PacketType.Play.Server.ENTITY_SOUND,
+            PacketType.Play.Server.ENTITY_STATUS,
+            PacketType.Play.Server.MOUNT);
 
     public EntityHider(SLSilentMobs plugin) {
         this.plugin = plugin;
@@ -80,52 +98,117 @@ public class EntityHider {
                     return;
 
                 PacketContainer packet = event.getPacket();
-                if (packet.getIntegers().size() == 0)
-                    return;
-                int entityId = packet.getIntegers().read(0);
-
-                int baseEntityId = getBaseEntityId(entityId);
-                if (baseEntityId == -1) {
-                    return;
-                }
-
-                Set<Integer> mountedChildren = event.getPacketType().equals(PacketType.Play.Server.MOUNT)
-                        ? registerMountedChildren(entityId, baseEntityId, packet)
-                        : Set.of();
-
-                Entity tracked = trackedEntities.get(baseEntityId);
-                if (event.getPacketType().equals(PacketType.Play.Server.SPAWN_ENTITY)
-                        && entityId == baseEntityId
-                        && tracked != null
-                        && packet.getUUIDs().size() > 0
-                        && !tracked.getUniqueId().equals(packet.getUUIDs().read(0))) {
-                    visibleTo.remove(baseEntityId);
-                    trackedEntities.remove(baseEntityId, tracked);
-                    clearModelEntityIds(baseEntityId);
-                    plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        releaseModelState(tracked);
-                        modelBridge.forget(tracked);
-                    });
-                    return;
-                }
-
-                Player receiver = event.getPlayer();
-                Set<UUID> allowed = visibleTo.get(baseEntityId);
-
-                // If receiver is NOT in the allowed set, cancel the packet
-                if (allowed != null && !allowed.contains(receiver.getUniqueId())) {
-                    if (entityId == baseEntityId) {
-                        cancelledBasePackets.increment();
-                    } else {
-                        cancelledModelPackets.increment();
-                    }
+                if (event.getPacketType().equals(PacketType.Play.Server.BUNDLE)) {
+                    filterBundle(event, packet);
+                } else if (shouldCancelPacket(event.getPacketType(), packet, event.getPlayer())) {
                     event.setCancelled(true);
-                    if (!mountedChildren.isEmpty()) {
-                        destroyMountedChildren(receiver.getUniqueId(), mountedChildren);
-                    }
                 }
             }
         });
+    }
+
+    private void filterBundle(PacketEvent event, PacketContainer bundlePacket) {
+        Iterable<PacketContainer> bundled = bundlePacket.getPacketBundles().readSafely(0);
+        if (bundled == null) {
+            return;
+        }
+
+        List<PacketContainer> packets = new ArrayList<>();
+        bundled.forEach(packets::add);
+        if (packets.isEmpty()) {
+            return;
+        }
+
+        // A mount may introduce dynamic children later in the same batch.
+        for (PacketContainer packet : packets) {
+            if (packet.getType().equals(PacketType.Play.Server.MOUNT)) {
+                registerBundleMount(packet, event.getPlayer());
+            }
+        }
+
+        List<PacketContainer> visible = new ArrayList<>(packets.size());
+        for (PacketContainer packet : packets) {
+            if (FILTERED_ENTITY_PACKETS.contains(packet.getType())
+                    && shouldCancelPacket(packet.getType(), packet, event.getPlayer())) {
+                cancelledBundledPackets.increment();
+            } else {
+                visible.add(packet);
+            }
+        }
+
+        if (visible.isEmpty()) {
+            event.setCancelled(true);
+        } else if (visible.size() != packets.size()) {
+            bundlePacket.getPacketBundles().write(0, visible);
+        }
+    }
+
+    private void registerBundleMount(PacketContainer packet, Player receiver) {
+        Integer vehicleId = getPacketEntityId(packet);
+        if (vehicleId == null) {
+            return;
+        }
+        int baseEntityId = getBaseEntityId(vehicleId);
+        if (baseEntityId == -1) {
+            return;
+        }
+
+        Set<Integer> mountedChildren = registerMountedChildren(vehicleId, baseEntityId, packet);
+        Set<UUID> allowed = visibleTo.get(baseEntityId);
+        if (!mountedChildren.isEmpty() && allowed != null && !allowed.contains(receiver.getUniqueId())) {
+            destroyMountedChildren(receiver.getUniqueId(), mountedChildren);
+        }
+    }
+
+    private boolean shouldCancelPacket(PacketType packetType, PacketContainer packet, Player receiver) {
+        Integer entityId = getPacketEntityId(packet);
+        if (entityId == null) {
+            return false;
+        }
+
+        int baseEntityId = getBaseEntityId(entityId);
+        if (baseEntityId == -1) {
+            return false;
+        }
+
+        Set<Integer> mountedChildren = packetType.equals(PacketType.Play.Server.MOUNT)
+                ? registerMountedChildren(entityId, baseEntityId, packet)
+                : Set.of();
+
+        Entity tracked = trackedEntities.get(baseEntityId);
+        if (packetType.equals(PacketType.Play.Server.SPAWN_ENTITY)
+                && entityId == baseEntityId
+                && tracked != null
+                && packet.getUUIDs().size() > 0
+                && !tracked.getUniqueId().equals(packet.getUUIDs().read(0))) {
+            visibleTo.remove(baseEntityId);
+            trackedEntities.remove(baseEntityId, tracked);
+            clearModelEntityIds(baseEntityId);
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                releaseModelState(tracked);
+                modelBridge.forget(tracked);
+            });
+            return false;
+        }
+
+        Set<UUID> allowed = visibleTo.get(baseEntityId);
+        if (allowed == null || allowed.contains(receiver.getUniqueId())) {
+            return false;
+        }
+
+        if (entityId == baseEntityId) {
+            cancelledBasePackets.increment();
+        } else {
+            cancelledModelPackets.increment();
+        }
+        if (!mountedChildren.isEmpty()) {
+            destroyMountedChildren(receiver.getUniqueId(), mountedChildren);
+        }
+        return true;
+    }
+
+    private Integer getPacketEntityId(PacketContainer packet) {
+        return packet.getIntegers().size() > 0 ? packet.getIntegers().read(0) : null;
     }
 
     /**
@@ -369,6 +452,7 @@ public class EntityHider {
         lines.add("ModelEngine: " + integration);
         lines.add("Cancelled packets: base=" + cancelledBasePackets.sum()
                 + ", model=" + cancelledModelPackets.sum()
+                + ", bundle=" + cancelledBundledPackets.sum()
                 + ", mountMapped=" + mountedModelEntities.sum());
 
         List<Integer> baseIds = new ArrayList<>(trackedEntities.keySet());
