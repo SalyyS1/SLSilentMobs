@@ -15,23 +15,26 @@ import java.util.Set;
 final class ModelEngineClientEntityIds {
 
     private static final String[] ID_GETTERS = {
-            "getId", "getPivotId", "getHitboxId", "getShadowId"
+            "getId", "getPivotId", "getHitboxId", "getShadowId", "getModelId"
     };
 
     private ModelEngineClientEntityIds() {
     }
 
-    static Set<Integer> collect(Object modeledEntity) throws ReflectiveOperationException {
+    static Set<Integer> collect(Object modeledEntity, Object vfx) throws ReflectiveOperationException {
         Set<Integer> ids = new LinkedHashSet<>();
-        if (modeledEntity == null) {
-            return ids;
+        if (modeledEntity != null) {
+            for (Object activeModel : values(invoke(modeledEntity, "getModels"))) {
+                collectRenderer(invoke(activeModel, "getModelRenderer"), ids);
+                for (Object behaviorRenderer : values(invoke(activeModel, "getBehaviorRenderers"))) {
+                    collectRenderer(behaviorRenderer, ids);
+                }
+            }
         }
 
-        for (Object activeModel : values(invoke(modeledEntity, "getModels"))) {
-            collectRenderer(invoke(activeModel, "getModelRenderer"), ids);
-            for (Object behaviorRenderer : values(invoke(activeModel, "getBehaviorRenderers"))) {
-                collectRenderer(behaviorRenderer, ids);
-            }
+        if (vfx != null) {
+            Object renderer = invoke(vfx, "getRenderer");
+            collectPart(invoke(renderer, "getVFXModel"), ids);
         }
         return ids;
     }

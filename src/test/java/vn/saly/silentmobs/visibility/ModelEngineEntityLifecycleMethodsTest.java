@@ -38,10 +38,18 @@ class ModelEngineEntityLifecycleMethodsTest {
         public static TestModeledEntity getModeledEntity(Entity entity) {
             return new TestModeledEntity();
         }
+
+        public static Object getVFX(Entity entity) {
+            return null;
+        }
     }
 
     public static final class EmptyApi {
         public static TestModeledEntity getModeledEntity(Entity entity) {
+            return null;
+        }
+
+        public static Object getVFX(Entity entity) {
             return null;
         }
     }

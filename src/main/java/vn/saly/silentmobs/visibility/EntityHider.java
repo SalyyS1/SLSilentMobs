@@ -8,6 +8,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import vn.saly.silentmobs.SLSilentMobs;
 
 import java.util.*;
@@ -23,6 +24,7 @@ public class EntityHider {
     private final SLSilentMobs plugin;
     private final ProtocolManager protocolManager;
     private ModelVisibilityBridge modelBridge;
+    private BukkitTask modelEntityRefreshTask;
 
     // entityId -> set of player UUIDs who CAN see this entity
     private final Map<Integer, Set<UUID>> visibleTo = new ConcurrentHashMap<>();
@@ -59,6 +61,7 @@ public class EntityHider {
         this.modelBridge = ModelEngineVisibilityBridge.create(
                 plugin, this::syncModelVisibility, this::clearRemovedModelEntityIds);
         registerPacketListener();
+        startModelEntityRefreshTask();
     }
 
     private void registerPacketListener() {
@@ -337,6 +340,7 @@ public class EntityHider {
 
         modelBridge = ModelEngineVisibilityBridge.create(
                 plugin, this::syncModelVisibility, this::clearRemovedModelEntityIds);
+        refreshModelEntityRefreshTask();
         for (Entity entity : List.copyOf(trackedEntities.values())) {
             syncModelVisibility(entity);
         }
@@ -401,6 +405,53 @@ public class EntityHider {
         }
     }
 
+    /**
+     * VFX spawned by skills do not fire ModelEngine's AddModelEvent. Refreshing
+     * on the server thread keeps their synthetic display IDs associated with
+     * the private base entity before subsequent client packets are emitted.
+     */
+    private void refreshModelEntityRefreshTask() {
+        if (modelBridge.isAvailable() && modelEntityRefreshTask == null) {
+            startModelEntityRefreshTask();
+            return;
+        }
+        if (!modelBridge.isAvailable() && modelEntityRefreshTask != null) {
+            modelEntityRefreshTask.cancel();
+            modelEntityRefreshTask = null;
+        }
+    }
+
+    private void startModelEntityRefreshTask() {
+        if (!modelBridge.isAvailable() || modelEntityRefreshTask != null) {
+            return;
+        }
+        modelEntityRefreshTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            for (Map.Entry<Integer, Entity> entry : trackedEntities.entrySet()) {
+                int baseEntityId = entry.getKey();
+                Entity entity = entry.getValue();
+                if (!entity.isValid() || entity.getEntityId() != baseEntityId) {
+                    continue;
+                }
+
+                Set<Integer> discovered = refreshModelEntityIds(entity, true);
+                if (discovered.isEmpty()) {
+                    continue;
+                }
+
+                Set<UUID> allowed = visibleTo.get(baseEntityId);
+                if (allowed == null) {
+                    continue;
+                }
+                List<Integer> clientEntityIds = List.copyOf(discovered);
+                for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    if (!allowed.contains(player.getUniqueId())) {
+                        sendDestroyPacket(player, clientEntityIds);
+                    }
+                }
+            }
+        }, 1L, 1L);
+    }
+
     private int getBaseEntityId(int entityId) {
         if (visibleTo.containsKey(entityId)) {
             return entityId;
@@ -413,36 +464,41 @@ public class EntityHider {
         return baseEntityId;
     }
 
-    private void refreshModelEntityIds(Entity entity) {
-        refreshModelEntityIds(entity, false);
+    private Set<Integer> refreshModelEntityIds(Entity entity) {
+        return refreshModelEntityIds(entity, false);
     }
 
     private void clearRemovedModelEntityIds(Entity entity) {
         refreshModelEntityIds(entity, true);
     }
 
-    private void refreshModelEntityIds(Entity entity, boolean clearWhenEmpty) {
+    private Set<Integer> refreshModelEntityIds(Entity entity, boolean clearWhenEmpty) {
         Set<Integer> ids = new HashSet<>(modelBridge.getClientEntityIds(entity));
         ids.remove(entity.getEntityId());
         if (ids.isEmpty()) {
             if (clearWhenEmpty) {
                 clearModelEntityIds(entity.getEntityId());
             }
-            return;
+            return Set.of();
         }
 
         int baseEntityId = entity.getEntityId();
-        Set<Integer> replacement = ConcurrentHashMap.newKeySet();
-        replacement.addAll(ids);
-        Set<Integer> previous = modelEntitiesByBase.put(baseEntityId, replacement);
-        if (previous != null) {
-            for (int previousId : previous) {
-                modelEntityOwners.remove(previousId, baseEntityId);
-            }
+        Set<Integer> known = modelEntitiesByBase.computeIfAbsent(baseEntityId,
+                ignored -> ConcurrentHashMap.newKeySet());
+        Set<Integer> discovered = new HashSet<>(ids);
+        discovered.removeAll(known);
+
+        Set<Integer> removed = new HashSet<>(known);
+        removed.removeAll(ids);
+        for (int removedId : removed) {
+            modelEntityOwners.remove(removedId, baseEntityId);
+            known.remove(removedId);
         }
-        for (int modelEntityId : replacement) {
+        for (int modelEntityId : discovered) {
             modelEntityOwners.put(modelEntityId, baseEntityId);
+            known.add(modelEntityId);
         }
+        return discovered;
     }
 
     private void clearModelEntityIds(int baseEntityId) {
@@ -477,6 +533,10 @@ public class EntityHider {
     }
 
     public void close() {
+        if (modelEntityRefreshTask != null) {
+            modelEntityRefreshTask.cancel();
+            modelEntityRefreshTask = null;
+        }
         clearAll();
         modelBridge.close();
         protocolManager.removePacketListeners(plugin);

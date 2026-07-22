@@ -160,7 +160,8 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     @Override
     public Set<Integer> getClientEntityIds(Entity entity) {
         try {
-            return ModelEngineClientEntityIds.collect(lifecycleMethods.getModeledEntity(entity));
+            return ModelEngineClientEntityIds.collect(
+                    lifecycleMethods.getModeledEntity(entity), lifecycleMethods.getVfx(entity));
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             warnOnce(exception);
             return Set.of();

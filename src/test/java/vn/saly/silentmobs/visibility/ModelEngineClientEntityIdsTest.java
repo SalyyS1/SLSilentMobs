@@ -13,9 +13,16 @@ class ModelEngineClientEntityIdsTest {
 
     @Test
     void collectsDisplayAndBehaviorClientEntityIds() throws ReflectiveOperationException {
-        Set<Integer> ids = ModelEngineClientEntityIds.collect(new FakeModeledEntity());
+        Set<Integer> ids = ModelEngineClientEntityIds.collect(new FakeModeledEntity(), new FakeVfx());
 
-        assertEquals(Set.of(11, 12, 13, 14, 15, 16, 17, 18, 19, 20), ids);
+        assertEquals(Set.of(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22), ids);
+    }
+
+    @Test
+    void collectsVfxClientEntityIdsWithoutAnActiveModel() throws ReflectiveOperationException {
+        Set<Integer> ids = ModelEngineClientEntityIds.collect(null, new FakeVfx());
+
+        assertEquals(Set.of(21, 22), ids);
     }
 
     public static final class FakeModeledEntity {
@@ -59,6 +66,28 @@ class ModelEngineClientEntityIdsTest {
     public static final class FakeBehaviorRenderer {
         public Map<String, FakePart> getRendered() {
             return Map.of("label", new FakePart(18));
+        }
+    }
+
+    public static final class FakeVfx {
+        public FakeVfxRenderer getRenderer() {
+            return new FakeVfxRenderer();
+        }
+    }
+
+    public static final class FakeVfxRenderer {
+        public FakeVfxModel getVFXModel() {
+            return new FakeVfxModel();
+        }
+    }
+
+    public static final class FakeVfxModel {
+        public int getPivotId() {
+            return 21;
+        }
+
+        public int getModelId() {
+            return 22;
         }
     }
 

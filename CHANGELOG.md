@@ -8,6 +8,7 @@ All notable changes to SLSilentMobs will be documented in this file.
 
 - Apply ModelEngine's native per-viewer renderer predicate before display entities are created, preventing model bones recreated by animated skills from reaching unauthorized clients.
 - Keep the native audience policy synchronized across viewer changes, disconnects, integration reloads, and entity cleanup while retaining packet-level cleanup as a fallback.
+- Track ModelEngine VFX pivot and model display IDs created by skills for a private mob, so their packets follow the same viewer policy as the mob.
 
 ### Compatibility
 
