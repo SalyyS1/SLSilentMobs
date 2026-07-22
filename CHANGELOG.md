@@ -12,10 +12,11 @@ All notable changes to SLSilentMobs will be documented in this file.
 - Keep each ModelEngine tracked-entity wrapper for the private mob's lifetime so wrapper-local audience and forced-hidden state cannot be discarded between syncs.
 - Learn client-only model descendants from `MOUNT` packets and release their mappings when a mount changes or the private base model is removed.
 - Filter entity packets nested in modern protocol `BUNDLE` packets, including ModelEngine renderer batches.
+- Filter private-only `modelengine:bulk_data` animation payloads emitted for the optional MEG client mod, including payloads nested in packet bundles.
 
 ### Diagnostics
 
-- Added `/sm debug` to report ModelEngine integration state, mapped client-side IDs, and base/model packet-cancellation counters from the live server.
+- Added `/sm debug` to report ModelEngine integration state, mapped client-side IDs, base/model packet-cancellation counters, and MEG bulk-payload activity from the live server.
 
 ### Compatibility
 

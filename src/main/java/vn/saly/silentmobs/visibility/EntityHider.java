@@ -45,6 +45,8 @@ public class EntityHider {
     private final LongAdder cancelledBasePackets = new LongAdder();
     private final LongAdder cancelledModelPackets = new LongAdder();
     private final LongAdder cancelledBundledPackets = new LongAdder();
+    private final LongAdder cancelledModelBulkPayloads = new LongAdder();
+    private final LongAdder observedModelBulkPayloads = new LongAdder();
     private final LongAdder mountedModelEntities = new LongAdder();
 
     private static final PacketType[] ENTITY_PACKETS = {
@@ -62,6 +64,7 @@ public class EntityHider {
             PacketType.Play.Server.ENTITY_SOUND,
             PacketType.Play.Server.ENTITY_STATUS,
             PacketType.Play.Server.MOUNT,
+            PacketType.Play.Server.CUSTOM_PAYLOAD,
             PacketType.Play.Server.BUNDLE
     };
 
@@ -79,7 +82,8 @@ public class EntityHider {
             PacketType.Play.Server.ENTITY_EFFECT,
             PacketType.Play.Server.ENTITY_SOUND,
             PacketType.Play.Server.ENTITY_STATUS,
-            PacketType.Play.Server.MOUNT);
+            PacketType.Play.Server.MOUNT,
+            PacketType.Play.Server.CUSTOM_PAYLOAD);
 
     public EntityHider(SLSilentMobs plugin) {
         this.plugin = plugin;
@@ -100,7 +104,7 @@ public class EntityHider {
                 PacketContainer packet = event.getPacket();
                 if (event.getPacketType().equals(PacketType.Play.Server.BUNDLE)) {
                     filterBundle(event, packet);
-                } else if (shouldCancelPacket(event.getPacketType(), packet, event.getPlayer())) {
+                } else if (shouldCancelPacketForReceiver(event.getPacketType(), packet, event.getPlayer())) {
                     event.setCancelled(true);
                 }
             }
@@ -129,7 +133,7 @@ public class EntityHider {
         List<PacketContainer> visible = new ArrayList<>(packets.size());
         for (PacketContainer packet : packets) {
             if (FILTERED_ENTITY_PACKETS.contains(packet.getType())
-                    && shouldCancelPacket(packet.getType(), packet, event.getPlayer())) {
+                    && shouldCancelPacketForReceiver(packet.getType(), packet, event.getPlayer())) {
                 cancelledBundledPackets.increment();
             } else {
                 visible.add(packet);
@@ -158,6 +162,46 @@ public class EntityHider {
         if (!mountedChildren.isEmpty() && allowed != null && !allowed.contains(receiver.getUniqueId())) {
             destroyMountedChildren(receiver.getUniqueId(), mountedChildren);
         }
+    }
+
+    private boolean shouldCancelPacketForReceiver(PacketType packetType, PacketContainer packet, Player receiver) {
+        if (packetType.equals(PacketType.Play.Server.CUSTOM_PAYLOAD)) {
+            return shouldCancelModelEngineBulkPayload(packet, receiver);
+        }
+        return shouldCancelPacket(packetType, packet, receiver);
+    }
+
+    private boolean shouldCancelModelEngineBulkPayload(PacketContainer packet, Player receiver) {
+        ModelEngineBulkPayloadInspector.Inspection inspection = findModelEngineBulkPayload(packet);
+        if (!inspection.bulkPayload()) {
+            return false;
+        }
+        observedModelBulkPayloads.increment();
+        if (!inspection.readable() || inspection.entityIds().isEmpty()) {
+            return false;
+        }
+
+        for (int entityId : inspection.entityIds()) {
+            int baseEntityId = getBaseEntityId(entityId);
+            Set<UUID> allowed = baseEntityId == -1 ? null : visibleTo.get(baseEntityId);
+            if (allowed == null || allowed.contains(receiver.getUniqueId())) {
+                return false;
+            }
+        }
+
+        cancelledModelBulkPayloads.increment();
+        return true;
+    }
+
+    private ModelEngineBulkPayloadInspector.Inspection findModelEngineBulkPayload(PacketContainer packet) {
+        for (int index = 0; index < packet.getModifier().size(); index++) {
+            ModelEngineBulkPayloadInspector.Inspection inspection = ModelEngineBulkPayloadInspector.inspect(
+                    packet.getModifier().readSafely(index));
+            if (inspection.bulkPayload()) {
+                return inspection;
+            }
+        }
+        return ModelEngineBulkPayloadInspector.Inspection.notBulk();
     }
 
     private boolean shouldCancelPacket(PacketType packetType, PacketContainer packet, Player receiver) {
@@ -453,6 +497,8 @@ public class EntityHider {
         lines.add("Cancelled packets: base=" + cancelledBasePackets.sum()
                 + ", model=" + cancelledModelPackets.sum()
                 + ", bundle=" + cancelledBundledPackets.sum()
+                + ", megBulk=" + cancelledModelBulkPayloads.sum()
+                + "/" + observedModelBulkPayloads.sum()
                 + ", mountMapped=" + mountedModelEntities.sum());
 
         List<Integer> baseIds = new ArrayList<>(trackedEntities.keySet());

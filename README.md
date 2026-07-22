@@ -32,7 +32,7 @@ A packet-level entity visibility plugin inspired by **Wynncraft**. Mobs, item dr
 Spawn mobs that are **only visible to a designated player**. All other players on the server cannot see or interact with the entity.
 
 - Supports both **Vanilla** and **MythicMobs** entity types
-- Hides **ModelEngine 4** client-side models, attached skill VFX, dynamically mounted client parts, and batched renderer packets together with their base entity
+- Hides **ModelEngine 4** client-side models, attached skill VFX, dynamically mounted client parts, batched renderer packets, and MEG client-mod animation payloads together with their base entity
 - Mobs only target their assigned owner
 - Permission-based visibility — share mobs with players who have a specific permission node
 - Automatic despawn on owner disconnect, timeout expiry, or plugin disable
@@ -110,7 +110,7 @@ Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
 | `/sm despawnall` | Remove all silent mobs server-wide |
 | `/sm list [player]` | List active silent mobs |
 | `/sm reload` | Reload all configuration files |
-| `/sm debug` | Show ModelEngine visibility mappings and packet-cancellation counters |
+| `/sm debug` | Show ModelEngine visibility mappings and packet-cancellation counters; `megBulk=blocked/seen` reports MEG custom animation payloads |
 
 ### Global Silent
 
