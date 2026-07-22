@@ -132,10 +132,14 @@ public class EntityHider {
 
         if (previousEntity != null && !previousEntity.getUniqueId().equals(entity.getUniqueId())) {
             clearModelEntityIds(entityId);
+            modelBridge.clearViewers(previousEntity);
             releaseModelState(previousEntity);
             previous = null;
         }
 
+        // ModelEngine's own renderer must know the audience before its next
+        // render tick, otherwise animated models can recreate hidden displays.
+        modelBridge.setViewers(entity, allowed);
         refreshModelEntityIds(entity);
 
         for (Player online : plugin.getServer().getOnlinePlayers()) {
@@ -189,6 +193,9 @@ public class EntityHider {
 
         Player player = plugin.getServer().getPlayer(playerUUID);
         Entity entity = trackedEntities.get(entityId);
+        if (entity != null) {
+            modelBridge.setViewers(entity, allowed);
+        }
         if (player != null && entity != null) {
             showEntity(entity, player);
         }
@@ -205,6 +212,9 @@ public class EntityHider {
 
         Player player = plugin.getServer().getPlayer(playerUUID);
         Entity entity = trackedEntities.get(entityId);
+        if (entity != null) {
+            modelBridge.setViewers(entity, allowed);
+        }
         if (player != null && entity != null) {
             hideEntity(entity, player);
         }
@@ -247,6 +257,7 @@ public class EntityHider {
 
         Entity target = tracked != null ? tracked : entity;
         clearModelEntityIds(entityId);
+        modelBridge.clearViewers(target);
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (restoreVisibility && !allowed.contains(online.getUniqueId())) {
                 showEntity(target, online);
@@ -317,6 +328,7 @@ public class EntityHider {
     public void reloadIntegrations() {
         ModelVisibilityBridge previous = modelBridge;
         for (Entity entity : List.copyOf(trackedEntities.values())) {
+            previous.clearViewers(entity);
             for (Player online : plugin.getServer().getOnlinePlayers()) {
                 previous.release(entity, online);
             }
@@ -340,6 +352,7 @@ public class EntityHider {
             Set<UUID> allowed = visibleTo.get(entry.getKey());
             if (allowed != null) {
                 allowed.remove(playerId);
+                modelBridge.setViewers(entry.getValue(), allowed);
             }
             modelBridge.release(entry.getValue(), player);
         }
@@ -352,6 +365,7 @@ public class EntityHider {
             return;
         }
 
+        modelBridge.setViewers(entity, allowed);
         refreshModelEntityIds(entity);
 
         for (Player online : plugin.getServer().getOnlinePlayers()) {

@@ -100,7 +100,7 @@ public class SLSilentMobs extends JavaPlugin {
 
         if (entityHider.isModelEngineAvailable()) {
             getLogger().info("ModelEngine " + entityHider.getModelEngineVersion()
-                    + " hooked - client-side model visibility enabled");
+                    + " hooked - native per-viewer model visibility enabled");
         }
 
         getLogger().info("SLSilentMobs v" + getDescription().getVersion() + " enabled | SalyVn");

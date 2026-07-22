@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Optional bridge for plugins that render extra client-side entities.
@@ -20,6 +21,21 @@ interface ModelVisibilityBridge extends AutoCloseable {
     void show(Entity entity, Player viewer);
 
     void release(Entity entity, Player viewer);
+
+    /**
+     * Applies the authoritative viewer policy to the renderer itself. This
+     * stops a renderer from producing client-only entities for unauthorized
+     * players instead of relying only on post-render packet cancellation.
+     */
+    default void setViewers(Entity entity, Set<UUID> viewers) {
+    }
+
+    /**
+     * Restores the renderer's normal audience policy when an entity is no
+     * longer managed by SLSilentMobs.
+     */
+    default void clearViewers(Entity entity) {
+    }
 
     /**
      * Returns client-only entity IDs currently used by the model for this base

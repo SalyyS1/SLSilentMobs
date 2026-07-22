@@ -36,6 +36,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private final Object entityHandler;
     private final Method wrapTrackedEntity;
     private final ModelEngineViewerMethods viewerMethods;
+    private final ModelEngineAudienceMethods audienceMethods;
     private final ModelEngineEntityLifecycleMethods lifecycleMethods;
     private final Method addModelEventGetTarget;
     private final Method removeModelEventGetTarget;
@@ -90,6 +91,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
 
         wrapTrackedEntity = entityHandlerType.getMethod("wrapTrackedEntity", Entity.class);
         viewerMethods = ModelEngineViewerMethods.resolve(trackedEntityType);
+        audienceMethods = ModelEngineAudienceMethods.resolve(trackedEntityType);
         lifecycleMethods = ModelEngineEntityLifecycleMethods.resolve(
                 apiType, entityHandlerType, modeledEntityType, baseEntityType);
         addModelEventGetTarget = addModelEventType.getMethod("getTarget");
@@ -128,6 +130,30 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     public void release(Entity entity, Player viewer) {
         if (unmarkHidden(entity, viewer)) {
             apply(entity, viewer, false, true, false);
+        }
+    }
+
+    @Override
+    public void setViewers(Entity entity, Set<UUID> viewers) {
+        try {
+            Object trackedEntity = wrapTrackedEntity.invoke(entityHandler, entity);
+            if (trackedEntity != null) {
+                audienceMethods.set(trackedEntity, viewers);
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            warnOnce(exception);
+        }
+    }
+
+    @Override
+    public void clearViewers(Entity entity) {
+        try {
+            Object trackedEntity = wrapTrackedEntity.invoke(entityHandler, entity);
+            if (trackedEntity != null) {
+                audienceMethods.clear(trackedEntity);
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            warnOnce(exception);
         }
     }
 
