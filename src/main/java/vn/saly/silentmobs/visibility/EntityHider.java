@@ -90,7 +90,10 @@ public class EntityHider {
                     visibleTo.remove(baseEntityId);
                     trackedEntities.remove(baseEntityId, tracked);
                     clearModelEntityIds(baseEntityId);
-                    plugin.getServer().getScheduler().runTask(plugin, () -> releaseModelState(tracked));
+                    plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        releaseModelState(tracked);
+                        modelBridge.forget(tracked);
+                    });
                     return;
                 }
 
@@ -137,6 +140,7 @@ public class EntityHider {
             clearModelEntityIds(entityId);
             modelBridge.clearViewers(previousEntity);
             releaseModelState(previousEntity);
+            modelBridge.forget(previousEntity);
             previous = null;
         }
 
@@ -268,6 +272,7 @@ public class EntityHider {
                 modelBridge.release(target, online);
             }
         }
+        modelBridge.forget(target);
     }
 
     /**

@@ -38,6 +38,13 @@ interface ModelVisibilityBridge extends AutoCloseable {
     }
 
     /**
+     * Drops renderer-specific state after the base entity is no longer
+     * managed. Implementations must not retain dead entity wrappers.
+     */
+    default void forget(Entity entity) {
+    }
+
+    /**
      * Returns client-only entity IDs currently used by the model for this base
      * entity. These IDs must follow the same visibility policy as the base.
      */

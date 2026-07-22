@@ -1415,7 +1415,8 @@ regions:
                     When ModelEngine 4 is installed, SLSilentMobs applies its native per-player audience predicate
                     before the renderer creates display entities. Pairing, destroy packets, and packet filtering remain
                     as fallback cleanup, including for models attached after the base mob has already spawned and
-                    ModelEngine VFX created by that mob's skills.
+                    ModelEngine VFX created by that mob's skills. The tracked-entity wrapper is retained for the
+                    private mob's lifetime so the audience policy cannot be lost on a later sync.
                 </p>
                 <p data-lang="vi">
                     Khi có ModelEngine 4, SLSilentMobs đặt native audience predicate theo từng player trước khi

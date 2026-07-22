@@ -35,6 +35,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private final Plugin modelEngine;
     private final Object entityHandler;
     private final Method wrapTrackedEntity;
+    private final ModelEngineTrackedEntityCache trackedEntityCache;
     private final ModelEngineViewerMethods viewerMethods;
     private final ModelEngineAudienceMethods audienceMethods;
     private final ModelEngineEntityLifecycleMethods lifecycleMethods;
@@ -90,6 +91,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
         }
 
         wrapTrackedEntity = entityHandlerType.getMethod("wrapTrackedEntity", Entity.class);
+        trackedEntityCache = new ModelEngineTrackedEntityCache(entityHandler, wrapTrackedEntity);
         viewerMethods = ModelEngineViewerMethods.resolve(trackedEntityType);
         audienceMethods = ModelEngineAudienceMethods.resolve(trackedEntityType);
         lifecycleMethods = ModelEngineEntityLifecycleMethods.resolve(
@@ -136,7 +138,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     @Override
     public void setViewers(Entity entity, Set<UUID> viewers) {
         try {
-            Object trackedEntity = wrapTrackedEntity.invoke(entityHandler, entity);
+            Object trackedEntity = trackedEntityCache.get(entity);
             if (trackedEntity != null) {
                 audienceMethods.set(trackedEntity, viewers);
             }
@@ -148,7 +150,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     @Override
     public void clearViewers(Entity entity) {
         try {
-            Object trackedEntity = wrapTrackedEntity.invoke(entityHandler, entity);
+            Object trackedEntity = trackedEntityCache.get(entity);
             if (trackedEntity != null) {
                 audienceMethods.clear(trackedEntity);
             }
@@ -169,14 +171,21 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     }
 
     @Override
+    public void forget(Entity entity) {
+        trackedEntityCache.forget(entity);
+        hiddenByThisPlugin.remove(entity.getUniqueId());
+    }
+
+    @Override
     public void close() {
         HandlerList.unregisterAll(this);
         hiddenByThisPlugin.clear();
+        trackedEntityCache.clear();
     }
 
     private void apply(Entity entity, Player viewer, boolean hidden, boolean removeHidden, boolean sendPairing) {
         try {
-            Object trackedEntity = wrapTrackedEntity.invoke(entityHandler, entity);
+            Object trackedEntity = trackedEntityCache.get(entity);
             if (trackedEntity == null) {
                 return;
             }
