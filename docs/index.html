@@ -1422,8 +1422,9 @@ regions:
                     as fallback cleanup, including for models attached after the base mob has already spawned and
                     ModelEngine VFX created by that mob's skills. The tracked-entity wrapper is retained for the
                     private mob's lifetime so the audience policy cannot be lost on a later sync. Client-only parts
-                    discovered through model mount hierarchies follow the same policy and are released on unmount or
-                    base-model removal. Batched renderer packets and private-only MEG client-mod animation payloads are
+                    discovered through model mount hierarchies, including non-player render parts mounted directly to
+                    the base by other model plugins, follow the same policy and are released on unmount or base-model
+                    removal. Batched renderer packets and private-only MEG client-mod animation payloads are
                     filtered before reaching unauthorized clients.
                 </p>
                 <p data-lang="vi">

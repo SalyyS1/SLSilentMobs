@@ -13,6 +13,7 @@ All notable changes to SLSilentMobs will be documented in this file.
 - Learn client-only model descendants from `MOUNT` packets and release their mappings when a mount changes or the private base model is removed.
 - Filter entity packets nested in modern protocol `BUNDLE` packets, including ModelEngine renderer batches.
 - Filter private-only `modelengine:bulk_data` animation payloads emitted for the optional MEG client mod, including payloads nested in packet bundles.
+- Correlate non-player entity spawns with direct `MOUNT` passengers of silent mobs, allowing client-side model plugins without a ModelEngine API bridge to inherit the same visibility policy.
 
 ### Diagnostics
 
