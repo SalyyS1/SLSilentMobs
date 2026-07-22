@@ -110,7 +110,7 @@ Base command: `/silentmob` (aliases: `/sm`, `/slmob`)
 | `/sm despawnall` | Remove all silent mobs server-wide |
 | `/sm list [player]` | List active silent mobs |
 | `/sm reload` | Reload all configuration files |
-| `/sm debug` | Show ModelEngine visibility mappings and packet-cancellation counters; `megBulk=blocked/seen` reports MEG custom animation payloads |
+| `/sm debug` | Show ModelEngine visibility mappings, per-player ModelEngine/ProtocolLib pipeline order, and packet-cancellation counters; `megBulk=blocked/seen` reports MEG custom animation payloads |
 
 ### Global Silent
 

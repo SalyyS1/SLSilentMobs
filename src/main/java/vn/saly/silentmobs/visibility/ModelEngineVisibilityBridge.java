@@ -10,6 +10,8 @@ import org.bukkit.plugin.Plugin;
 import vn.saly.silentmobs.SLSilentMobs;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,6 +41,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private final ModelEngineViewerMethods viewerMethods;
     private final ModelEngineAudienceMethods audienceMethods;
     private final ModelEngineEntityLifecycleMethods lifecycleMethods;
+    private final ModelEngineNetworkDiagnostics networkDiagnostics;
     private final Method addModelEventGetTarget;
     private final Method removeModelEventGetTarget;
     private final Method modeledEntityGetBase;
@@ -96,6 +99,7 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
         audienceMethods = ModelEngineAudienceMethods.resolve(trackedEntityType);
         lifecycleMethods = ModelEngineEntityLifecycleMethods.resolve(
                 apiType, entityHandlerType, modeledEntityType, baseEntityType);
+        networkDiagnostics = resolveNetworkDiagnostics(apiType, loader);
         addModelEventGetTarget = addModelEventType.getMethod("getTarget");
         removeModelEventGetTarget = removeModelEventType.getMethod("getTarget");
         modeledEntityGetBase = modeledEntityType.getMethod("getBase");
@@ -168,6 +172,18 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
             warnOnce(exception);
             return Set.of();
         }
+    }
+
+    @Override
+    public List<String> getNetworkDiagnostics(Iterable<? extends Player> players) {
+        if (networkDiagnostics == null) {
+            return List.of("ModelEngine pipelines: unavailable");
+        }
+        List<String> lines = new ArrayList<>();
+        for (Player player : players) {
+            lines.add(networkDiagnostics.describe(player.getUniqueId(), player.getName()));
+        }
+        return lines;
     }
 
     @Override
@@ -258,6 +274,14 @@ final class ModelEngineVisibilityBridge implements ModelVisibilityBridge, Listen
     private void warnOnce(Throwable throwable) {
         if (warned.compareAndSet(false, true)) {
             plugin.getLogger().warning("ModelEngine visibility sync failed: " + throwable.getMessage());
+        }
+    }
+
+    private ModelEngineNetworkDiagnostics resolveNetworkDiagnostics(Class<?> apiType, ClassLoader loader) {
+        try {
+            return ModelEngineNetworkDiagnostics.resolve(apiType, loader);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            return null;
         }
     }
 

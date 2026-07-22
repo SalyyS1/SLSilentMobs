@@ -17,7 +17,7 @@ All notable changes to SLSilentMobs will be documented in this file.
 
 ### Diagnostics
 
-- Added `/sm debug` to report ModelEngine integration state, mapped client-side IDs, base/model packet-cancellation counters, and MEG bulk-payload activity from the live server.
+- Added `/sm debug` to report ModelEngine integration state, mapped client-side IDs, ModelEngine/ProtocolLib pipeline order, base/model packet-cancellation counters, and MEG bulk-payload activity from the live server.
 
 ### Compatibility
 

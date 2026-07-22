@@ -4,6 +4,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -50,6 +51,14 @@ interface ModelVisibilityBridge extends AutoCloseable {
      */
     default Set<Integer> getClientEntityIds(Entity entity) {
         return Collections.emptySet();
+    }
+
+    /**
+     * Returns network-pipeline information used only by the administrative
+     * debug command to diagnose packet listener ordering.
+     */
+    default List<String> getNetworkDiagnostics(Iterable<? extends Player> players) {
+        return List.of();
     }
 
     @Override

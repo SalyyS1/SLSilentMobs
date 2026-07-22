@@ -537,6 +537,7 @@ public class EntityHider {
                 ? "hooked " + modelBridge.getVersion()
                 : "not available";
         lines.add("ModelEngine: " + integration);
+        lines.addAll(modelBridge.getNetworkDiagnostics(plugin.getServer().getOnlinePlayers()));
         lines.add("Cancelled packets: base=" + cancelledBasePackets.sum()
                 + ", model=" + cancelledModelPackets.sum()
                 + ", bundle=" + cancelledBundledPackets.sum()
