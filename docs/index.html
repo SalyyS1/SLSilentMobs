@@ -704,19 +704,19 @@
                     <tbody>
                         <tr>
                             <td>Spigot / Paper</td>
-                            <td>1.21.5+</td>
+                            <td>1.21.5-1.21.11; Paper 26.1+</td>
                             <td><span class="badge badge-required" data-lang="en">Required</span><span
                                     class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
                         </tr>
                         <tr>
                             <td>Java</td>
-                            <td>17+</td>
+                            <td>17+; Java 25 for Paper 26.1+</td>
                             <td><span class="badge badge-required" data-lang="en">Required</span><span
                                     class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
                         </tr>
                         <tr>
                             <td>ProtocolLib</td>
-                            <td>5.4.0+</td>
+                            <td>5.4.0+; 5.5 dev build for Paper 26.1+</td>
                             <td><span class="badge badge-required" data-lang="en">Required</span><span
                                     class="badge badge-required" data-lang="vi">Bắt buộc</span></td>
                         </tr>
@@ -744,9 +744,15 @@
                     <strong>ProtocolLib</strong> is essential &mdash; SLSilentMobs uses packet-level entity hiding
                     to control mob visibility. Without it, the plugin cannot function.
                 </div>
+                <div class="callout" data-lang="en">
+                    <strong>Paper 26.1+</strong> requires Java 25 and a ProtocolLib 5.5 development build or newer.
+                </div>
                 <div class="callout" data-lang="vi">
                     <strong>ProtocolLib</strong> là bắt buộc &mdash; SLSilentMobs dùng can thiệp packet để
                     ẩn/hiện entity. Không có ProtocolLib, plugin không thể hoạt động.
+                </div>
+                <div class="callout" data-lang="vi">
+                    <strong>Paper 26.1+</strong> cần Java 25 và ProtocolLib 5.5 development build hoặc mới hơn.
                 </div>
             </section>
 
@@ -1406,14 +1412,14 @@ regions:
                 <h3 data-lang="en">ModelEngine Client-Side Models</h3>
                 <h3 data-lang="vi">Model client-side của ModelEngine</h3>
                 <p data-lang="en">
-                    When ModelEngine 4 is installed, SLSilentMobs also updates its per-player pairing state.
-                    This hides every display entity used by the model, including models attached after the base mob
-                    has already spawned. ModelEngine remains optional and is detected automatically.
+                    When ModelEngine 4 is installed, SLSilentMobs applies its native per-player audience predicate
+                    before the renderer creates display entities. Pairing, destroy packets, and packet filtering remain
+                    as fallback cleanup, including for models attached after the base mob has already spawned.
                 </p>
                 <p data-lang="vi">
-                    Khi có ModelEngine 4, SLSilentMobs đồng bộ thêm trạng thái pairing theo từng player.
-                    Toàn bộ display entity của model đều bị ẩn, kể cả model được gắn sau khi mob gốc đã spawn.
-                    ModelEngine vẫn là phụ thuộc tùy chọn và được tự động nhận diện.
+                    Khi có ModelEngine 4, SLSilentMobs đặt native audience predicate theo từng player trước khi
+                    renderer tạo display entity. Pairing, destroy packet và packet filter vẫn là lớp dự phòng,
+                    kể cả khi model được gắn sau lúc mob gốc đã spawn.
                 </p>
             </section>
 

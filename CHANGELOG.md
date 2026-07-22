@@ -2,6 +2,18 @@
 
 All notable changes to SLSilentMobs will be documented in this file.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- Apply ModelEngine's native per-viewer renderer predicate before display entities are created, preventing model bones recreated by animated skills from reaching unauthorized clients.
+- Keep the native audience policy synchronized across viewer changes, disconnects, integration reloads, and entity cleanup while retaining packet-level cleanup as a fallback.
+
+### Compatibility
+
+- Verified the native audience integration against ModelEngine R4.0.7, R4.0.9, and R4.1.0 APIs.
+- Documented Paper 26.1+ requirements: Java 25 and ProtocolLib 5.5 development build or newer.
+
 ## [2.3.0] - 2026-07-10
 
 ### Features

@@ -77,8 +77,9 @@ Item drops from mob kills are **only visible to and collectible by the killer**.
 
 | Dependency | Version | Required |
 |------------|---------|----------|
-| Paper / Spigot | 1.21.5+ | Yes |
-| ProtocolLib | 5.4.0+ | Yes |
+| Paper / Spigot | 1.21.5-1.21.11; Paper 26.1+ | Yes |
+| Java | 17+; Java 25 for Paper 26.1+ | Yes |
+| ProtocolLib | 5.4.0+; 5.5 development build or newer for Paper 26.1+ | Yes |
 | MythicMobs | 5.x | No (enables custom mob support) |
 | ModelEngine | 4.0.7 - 4.1.x | No (enables per-player model visibility) |
 | PlaceholderAPI | 2.11+ | No (enables placeholders) |
@@ -89,7 +90,7 @@ Item drops from mob kills are **only visible to and collectible by the killer**.
 
 1. Download `SLSilentMobs-2.3.0.jar` from the [Releases](https://github.com/SalyyS1/SLSilentMobs/releases) page.
 2. Place the JAR into your server's `plugins/` directory.
-3. Ensure **ProtocolLib** is installed. Install **ModelEngine 4** only when using modeled mobs.
+3. Ensure **ProtocolLib** is installed. Install **ModelEngine 4** only when using modeled mobs. Paper 26.1+ requires Java 25 and a ProtocolLib 5.5 development build or newer.
 4. Restart the server.
 5. Configuration files are generated automatically in `plugins/SLSilentMobs/`.
 
@@ -275,7 +276,8 @@ src/main/java/vn/saly/silentmobs/
     MobTimeoutTask.java             Scheduled cleanup
   visibility/
     EntityHider.java                ProtocolLib packet hiding
-    ModelEngineVisibilityBridge.java Optional ModelEngine per-viewer pairing
+    ModelEngineVisibilityBridge.java Native ModelEngine per-viewer audience bridge
+    ModelEngineAudienceMethods.java  ModelEngine native audience compatibility resolver
     ModelEngineViewerMethods.java   ModelEngine 4.0/4.1 compatibility resolver
   placeholder/
     SilentMobsPlaceholder.java      PlaceholderAPI hook
